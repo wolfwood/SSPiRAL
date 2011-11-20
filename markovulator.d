@@ -44,8 +44,9 @@ int main(char[][] argv){
 			//l = null;
 		}
 
-		// print markov nodes
-
+		foreach(MetaLayout markov; curr){
+			markov.printMe();
+		}
 
 		curr = mapping.values;
 	}

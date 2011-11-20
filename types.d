@@ -5,6 +5,7 @@ typedef ulong LayoutName;
 alias ulong Counter;
 
 import tango.io.Stdout;
+import tango.util.Convert;
 
 struct Node{
 	static:
@@ -15,6 +16,7 @@ struct Node{
 	}
 
 	NodeName N, maxNode;
+	const NodeName one = cast(NodeName)1;
 
 	static int opApply(int delegate(ref NodeName) dg){
 		int result = 0;
@@ -40,9 +42,20 @@ struct Node{
 class Layout{
 	LayoutName name;
 	Score score;
+	MetaLayout markov;
 
 	this(){
 		score = new Score;
+	}
+
+	this(LayoutName n, Score s, MetaLayout m){
+		name = n;
+
+		score = new Score;
+		score.score.length = s.score.length;
+		score += s;
+
+		markov = m;
 	}
 
 	static Layout[] startingSet(){
@@ -55,7 +68,7 @@ class Layout{
 		return layouts;
 	}
 
-	void generateLayouts(ref Layout[LayoutName] nextLayouts){
+	void generateLayouts(ref Layout[LayoutName] nextLayouts, MetaLayout m){
 		foreach(LayoutName node ; Node){
 			LayoutName nym = name | node;
 
@@ -64,15 +77,19 @@ class Layout{
 				if(l !is null){
 					nextLayouts[nym].score += score;
 				}else{
-					Layout ell = new Layout;
-					ell.name = nym;
-					ell.score += score;
+					Layout ell = new Layout(nym, score, m);
 
-					//XXX:
-					//if(alive)
-					//l is still alive
-					//else
-					// run isAlive
+					if(alive){
+						ell.alive = true;
+					}else{
+						ell.alive = ell.checkIfAlive();
+					}
+
+					if(ell.alive){
+						ell.score.score ~= [1];
+					}else{
+						ell.score.score ~= [0];
+					}
 
 					nextLayouts[nym] = ell;
 				}
@@ -81,24 +98,39 @@ class Layout{
 	}
 
 private:
-	/+int opApply(int delegate(ref Layout) dg){
-		int result = 0;
+	bool alive;
 
-		foreach(NodeName nym ; Node){
-			LayoutName next = name | cast(LayoutName)nym;
+	bool checkIfAlive(){
+		bool flag = true;
 
-			if(next != name){
-				Layout* l = new Layout;
+		for(NodeName dataNode = cast(NodeName)1; dataNode <= Node.maxNode; dataNode <<= 1){
+			LayoutName dataLayout = cast(LayoutName)1 << (dataNode - cast(NodeName)1);
 
-				l.name = next;
-
-				result = dg(*l);
-				if(result)break;
+			if((name & dataLayout) == 0){
+				if(!recurseCheck(dataNode)){
+					return false;
+				}
 			}
 		}
 
-		return result;
-	}+/
+		return flag;
+	}
+
+	bool recurseCheck(NodeName bitmap, NodeName i = Node.one){
+		for(; i <= Node.maxNode; i++){
+			LayoutName nodeLayout = cast(LayoutName)1 << (i - Node.one);
+
+			if(name & nodeLayout){
+				NodeName newBitmap = i ^ bitmap;
+
+				if(newBitmap == 0 || recurseCheck(newBitmap, i+Node.one)){
+					return true;
+				}
+			}
+		}
+
+		return false;
+	}
 
 
 	static int opApply(int delegate(ref Layout) dg){
@@ -140,8 +172,17 @@ class MetaLayout{
 
 	void generateLayouts(ref Layout[LayoutName] next){
 		foreach(Layout l; layouts){
-			l.generateLayouts(next);
+			l.generateLayouts(next, this);
 			//l = null;
+		}
+	}
+
+	void printMe(){
+		if(name == 0){
+			Stdout("n0 [label=\"Death\"]").newline;
+		}else{
+			Stdout("n" ~ to!(char[])(name) ~ " [label=\"" ~
+						 to!(char[])(layouts[0].score.score.length) ~ " " ~ to!(char[])(layouts.length) ~"\"]").newline;
 		}
 	}
 
