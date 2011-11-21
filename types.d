@@ -210,6 +210,43 @@ class Score{
 		return this;
 	}
 
+	hash_t toHash(){
+		Counter hash;
+
+		foreach(Counter s; score){
+			hash += s;
+		}
+
+		return hash;
+	}
+
+	int opEquals(Object o){
+		Score s = cast(Score)o;
+
+		if(s.score.length != score.length)
+			return 0;
+
+		foreach(int i, Counter val; score){
+			if(val != s.score[i]){
+				return 0;
+			}
+		}
+
+		return 1;
+	}
+
+	int opCmp(Object o){
+		Score s = cast(Score)o;
+
+		foreach(int i, Counter val; score){
+			if(val != s.score[i]){
+				return val - score[i];
+			}
+		}
+
+		return 0;
+	}
+
 private:
 	Counter score[];
 }
