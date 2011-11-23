@@ -75,7 +75,7 @@ def makeMonotonic(nodes, nodeCounts):
             nodes = renameNodes(nodes, swap)
 
             return makeMonotonic(nodes,nodeDataSums(nodes))
-        else:
+        elif nodeCounts[x] < max:
             max = nodeCounts[x]
             maxIdx = x
 
@@ -96,7 +96,7 @@ def main():
         nodes = layout2nodes(x)
         sums = nodeDataSums(nodes)
         if checkMonotonic(sums):
-            print x #nodes, sums #, ,  makeMonotonic(nodes, sums)
+            print nodes, sums,  makeMonotonic(nodes, sums)
 
 
 main()
