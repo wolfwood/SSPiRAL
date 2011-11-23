@@ -39,6 +39,19 @@ struct Node{
 		return result;
 	}
 
+	static LayoutName convert(NodeName n){
+		return cast(LayoutName)1 << (n -1);
+	}
+
+	static NodeName convert(LayoutName l){
+		NodeName j = one;
+		for(LayoutName i = cast(LayoutName)1; i < (1UL << maxNode); i <<= 1, j++){
+			if(l == i){
+				return j;
+			}
+		}
+		return zero;
+	}
 }
 
 class ConsolidatedLayoutName{
