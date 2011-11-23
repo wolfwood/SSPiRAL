@@ -240,7 +240,7 @@ class Score{
 
 		foreach(int i, Counter val; score){
 			if(val != s.score[i]){
-				return val - score[i];
+				return val - s.score[i];
 			}
 		}
 
