@@ -35,7 +35,7 @@ int main(char[][] argv){
 			MetaLayout* markov = l.score in mapping;
 
 			if(markov !is null){
-				markov.layouts ~= l;
+				markov.addLayout(l);
 			}else{
 				mapping[l.score] = new MetaLayout(false, [l]);
 

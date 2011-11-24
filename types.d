@@ -152,8 +152,6 @@ private:
 
 // markov mode state
 class MetaLayout{
-	Layout[] layouts;
-
 	Counter name;
 	bool alive;
 	Counter coalescedNodes;
@@ -186,7 +184,12 @@ class MetaLayout{
 		}
 	}
 
+	void addLayout(Layout l){
+		layouts ~= l;
+	}
+
 private:
+	Layout[] layouts;
 	static Counter count;
 }
 
