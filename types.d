@@ -42,7 +42,7 @@ struct Node{
 class Layout{
 	LayoutName name;
 	Score score;
-	MetaLayout markov;
+	MarkovCollection markov;
 
 	this(){
 		score = new Score;
@@ -55,7 +55,8 @@ class Layout{
 		score.score.length = s.score.length;
 		score += s;
 
-		markov = m;
+		markov = new MarkovCollection();
+		markov.add(m);
 	}
 
 	static Layout[] startingSet(){
@@ -75,7 +76,8 @@ class Layout{
 			if(nym != name){
 				Layout* l = nym in nextLayouts;
 				if(l !is null){
-					nextLayouts[nym].score += score;
+					l.score += score;
+					l.markov.add(m);
 				}else{
 					Layout ell = new Layout(nym, score, m);
 
@@ -97,8 +99,9 @@ class Layout{
 		}
 	}
 
-private:
 	bool alive;
+private:
+
 
 	bool checkIfAlive(){
 		bool flag = true;
@@ -153,8 +156,13 @@ private:
 // markov mode state
 class MetaLayout{
 	Counter name;
-	bool alive;
+	//bool alive;
 	Counter coalescedNodes;
+
+	static void setup(){
+		deth = new MetaLayout(true);
+		deth.printMe();
+	}
 
 	synchronized this(bool dethNode, Layout[] ls = null){
 		if(dethNode){
@@ -179,8 +187,44 @@ class MetaLayout{
 		if(name == 0){
 			Stdout("n0 [label=\"Death\"]").newline;
 		}else{
-			Stdout("n" ~ to!(char[])(name) ~ " [label=\"" ~
-						 to!(char[])(layouts[0].score.score.length) ~ " " ~ to!(char[])(layouts.length) ~"\"]").newline;
+			if(layouts[0].alive){
+				Stdout("n" ~ to!(char[])(name) ~ " [label=\"" ~
+							 to!(char[])(layouts[0].score.score.length) ~ " " ~ to!(char[])(layouts.length) ~"\"]").newline;
+			}
+		}
+	}
+
+	void printChildEdge(){
+		if(layouts[0].alive){
+			uint[MetaLayout] counts;
+
+			foreach(Layout l; layouts){
+				if(!l.alive){
+					uint* c = deth in counts;
+					if(c !is null){
+						*c += 1;
+					}else{
+						counts[deth] = 1;
+					}
+				}else{
+					foreach(MetaLayout markov; l.markov.arr){
+						uint* c = markov in counts;
+						if(c !is null){
+							*c += 1;
+						}else{
+							counts[markov] = 1;
+						}
+					}
+				}
+			}
+
+			foreach(MetaLayout m; counts.keys){
+				if(m.layouts[0].alive){
+					Stdout("n" ~ to!(char[])(name) ~ " -> n" ~ to!(char[])(m.name)).newline;
+				}else{
+					Stdout("n" ~ to!(char[])(name) ~ " -> n0 [label=<"~to!(char[])((counts[m] / layouts.length))~" &#955;>]").newline;
+				}
+			}
 		}
 	}
 
@@ -191,6 +235,16 @@ class MetaLayout{
 private:
 	Layout[] layouts;
 	static Counter count;
+	static MetaLayout deth;
+}
+
+class MarkovCollection{
+	void add(MetaLayout mark){
+		arr ~= mark;
+	}
+
+	//private:
+	MetaLayout[] arr;
 }
 
 class Score{

@@ -12,12 +12,12 @@ int main(char[][] argv){
 	}
 
 	// --- initialization --
+	Stdout("digraph markovmodel {").newline;
+
 	Node.setDataSize(to!(uint)(argv[1]));
-	MetaLayout deth = new MetaLayout(true);
+	MetaLayout.setup();
 	MetaLayout[] curr;
 	curr = [new MetaLayout(false, Layout.startingSet())];
-
-	Stdout("digraph markovmodel {").newline;
 
 
 	// --- work loop ---
@@ -25,7 +25,8 @@ int main(char[][] argv){
 		Layout[LayoutName] next;
 
 		foreach(MetaLayout markov; curr){
-			 markov.generateLayouts(next);
+			markov.printChildEdge();
+			markov.generateLayouts(next);
 		}
 
 		MetaLayout[Score] mapping;
