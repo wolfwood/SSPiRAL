@@ -26,7 +26,7 @@ int main(char[][] argv){
 
 		foreach(MetaLayout markov; curr){
 			markov.printChildEdge();
-			markov.generateLayouts(next);
+			markov.generateLayouts(next, layoutSize);
 		}
 
 		MetaLayout[Score] mapping;
@@ -45,16 +45,33 @@ int main(char[][] argv){
 			//l = null;
 		}
 
-		foreach(MetaLayout markov; curr){
-			markov.printMe();
+		MetaLayout last;
+		char[] r;
+		foreach(uint rank, MetaLayout markov; curr.sort.reverse){
+			char[] n = markov.nodeName;
+			if(n != ""){
+				r ~= " " ~ n ~ ";";
+			}
+
+			markov.printMe(rank);
+
+			if(rank == 0){
+				markov.printScore();
+			}
+
+			markov.printOrderConstraint(last);
+
+			last = markov;
+		}
+		if(r !is null){
+			Stdout("{rank=same; l" ~ to!(char[])(layoutSize) ~ ";" ~ r ~ "}").newline;
 		}
 
 		curr = mapping.values;
 	}
 
-
 	// footer
-	Stdout("}").newline;
+	Stdout("nodesep=.05\nranksep=.5\n}").newline;
 
 	return 0;
 }

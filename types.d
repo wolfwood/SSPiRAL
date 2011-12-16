@@ -99,6 +99,10 @@ class Layout{
 		}
 	}
 
+	void normalize(Counter layoutSize){
+		score.normalize(layoutSize);
+	}
+
 	bool alive;
 private:
 
@@ -176,22 +180,39 @@ class MetaLayout{
 		count++;
 	}
 
-	void generateLayouts(ref Layout[LayoutName] next){
+	void generateLayouts(ref Layout[LayoutName] next, Counter layoutSize){
 		foreach(Layout l; layouts){
+			l.normalize(layoutSize);
 			l.generateLayouts(next, this);
 			//l = null;
 		}
 	}
 
-	void printMe(){
+	void printMe(uint rank = 1){
 		if(name == 0){
 			Stdout("n0 [label=\"Death\"]").newline;
 		}else{
 			if(layouts[0].alive){
 				Stdout("n" ~ to!(char[])(name) ~ " [label=\"" ~
-							 to!(char[])(layouts[0].score.score.length) ~ " " ~ to!(char[])(layouts.length) ~"\"]").newline;
+							 //to!(char[])(layouts[0].score.score.length) ~ " " ~
+							 to!(char[])(layouts.length) /*~ " " ~ to!(char[])(rank)*/ ~ "\"");
+				if(rank == 0){
+					Stdout(" style=\"bold\"");
+				}
+				Stdout("]").newline;
 			}
 		}
+	}
+
+	char[] nodeName(){
+		if(layouts[0].alive){
+			return " n" ~ to!(char[])(name);
+		}
+		return "";
+	}
+
+	void printScore(){
+		layouts[0].score.print();
 	}
 
 	void printChildEdge(){
@@ -228,8 +249,38 @@ class MetaLayout{
 		}
 	}
 
+	void printOrderConstraint(MetaLayout prev){
+		if(layouts[0].alive){
+			if(prev is null){
+				char[] count = to!(char[])(layouts[0].score.score.length);
+				Stdout("l" ~ count ~" [label=" ~ count ~ " shape=plaintext]").newline;
+				Stdout("l" ~ to!(char[])(count) ~ " -> n" ~ to!(char[])(name) ~ " [style=invis]").newline;
+			}else	if(prev.layouts[0].alive){
+				Stdout("n" ~ to!(char[])(prev.name) ~ " -> n" ~ to!(char[])(name) ~ " [style=invis]").newline;
+			}
+		}
+	}
+
 	void addLayout(Layout l){
 		layouts ~= l;
+	}
+
+	int opCmp(Object o){
+		MetaLayout m = cast(MetaLayout)o;
+
+		if(!layouts[0].alive){
+			if(!m.layouts[0].alive){
+				return 0;
+			}
+
+			return -1;
+		}else if(!m.layouts[0].alive){
+			return 1;
+		}
+
+		// XXX javfoo didn't use scaled values... why is this correct?
+		return layouts[0].score.opCmp(m.layouts[0].score);
+		//return layouts[0].score.relCmp(layouts.length, m.layouts[0].score, m.layouts.length);
 	}
 
 private:
@@ -249,8 +300,16 @@ class MarkovCollection{
 
 class Score{
 	Score opPostInc(){
-		score[$]++;
+		score[$-1]++;
 		return this;
+	}
+
+	void normalize(Counter layoutSize){
+		if(score.length > 3){
+			for(uint i  =1; i < score.length; i++){
+				score[$-i-1] /= i;
+			}
+		}
 	}
 
 	Score opAddAssign(Score other){
@@ -302,6 +361,25 @@ class Score{
 		}
 
 		return 0;
+	}
+
+	int relCmp(Counter t, Score s, Counter o){
+		foreach(int i, Counter val; score){
+			if(val != s.score[i]){
+				return (val / t) - (s.score[i] / o);
+			}
+		}
+
+		return 0;
+	}
+
+	void print(){
+		Stdout("# ");
+		foreach(Counter val; score){
+			Stdout(to!(char[])(val));
+			Stdout(" ");
+		}
+		Stdout().newline;
 	}
 
 private:
