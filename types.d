@@ -241,7 +241,7 @@ class MetaLayout{
 
 			foreach(MetaLayout m; counts.keys){
 				if(m.layouts[0].alive){
-					Stdout("n" ~ to!(char[])(name) ~ " -> n" ~ to!(char[])(m.name)).newline;
+					Stdout("n" ~ to!(char[])(name) ~ " -> n" ~ to!(char[])(m.name) ~"[label="~to!(char[])((counts[m] / layouts.length))~"]").newline;
 				}else{
 					Stdout("n" ~ to!(char[])(name) ~ " -> n0 [label=<"~to!(char[])((counts[m] / layouts.length))~" &#955;>]").newline;
 				}
