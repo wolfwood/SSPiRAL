@@ -1,0 +1,8 @@
+*.o
+Sim
+mrkv
+markovulator
+testCanon
+old_sims/sim7
+old_sims/dat
+dot/

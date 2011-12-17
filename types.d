@@ -17,6 +17,7 @@ struct Node{
 
 	NodeName N, maxNode;
 	const NodeName one = cast(NodeName)1;
+	const NodeName zero = cast(NodeName)0;
 
 	static int opApply(int delegate(ref NodeName) dg){
 		int result = 0;
@@ -36,6 +37,133 @@ struct Node{
 		}
 
 		return result;
+	}
+
+	static LayoutName convert(NodeName n){
+		return cast(LayoutName)1 << (n -1);
+	}
+
+	static NodeName convert(LayoutName l){
+		NodeName j = one;
+		for(LayoutName i = cast(LayoutName)1; i < (1UL << maxNode); i <<= 1, j++){
+			if(l == i){
+				return j;
+			}
+		}
+		return zero;
+	}
+}
+
+class ConsolidatedLayoutName{
+	//void opAssign(ConsolidatedLayoutName other){}
+	void opAssign(LayoutName other){
+		name = other;
+
+		makeMonotonic();
+	}
+
+	this(){
+		nodeCount.length = Node.N;
+	}
+
+	LayoutName opAnd(LayoutName l){
+		return name & l;
+	}
+
+	LayoutName opOr(LayoutName l){
+		return name | l;
+	}
+
+	hash_t toHash(){
+		return name;
+	}
+
+	int opEquals(Object o){
+		ConsolidatedLayoutName n = cast(ConsolidatedLayoutName)o;
+
+		if(n is null)
+			return 0;
+
+		if(n.name != name)
+			return 0;
+
+		return 1;
+	}
+
+	int opCmp(Object o){
+		ConsolidatedLayoutName n = cast(ConsolidatedLayoutName)o;
+
+		return name - n.name;
+	}
+
+	void print(){
+		Stdout(name);
+	}
+private:
+	LayoutName name;
+	uint[] nodeCount;
+
+	void makeMonotonic(){
+	restart:
+		countDataNodes();
+
+ 		uint maxIdx = 0, max = nodeCount[maxIdx];
+
+		for(uint i = 1;  i < nodeCount.length; i++){
+			if(nodeCount[i] > max){
+				renameNodes(i, maxIdx);
+
+				goto restart;
+			}else if(nodeCount[i] < max) {
+				max = nodeCount[i];
+				maxIdx = i;
+			}
+		}
+	}
+
+	void renameNodes(uint a, uint b){
+		NodeName swap = (Node.one << a) | (Node.one << b);
+		LayoutName newName;
+
+
+		/*		Stdout("-");
+		foreach(uint i; nodeCount){
+			Stdout(" ");
+			Stdout(i);
+		}
+		Stdout("-");
+		*/
+
+		foreach(LayoutName node; Node){
+			if(name & node){
+				NodeName parity = Node.convert(node);
+				NodeName contains = parity & swap;
+
+				if((contains != Node.zero) && (contains != swap)){
+					parity ^= swap;
+				}
+
+				newName |= Node.convert(parity);
+			}
+		}
+
+		name = newName;
+	}
+
+	void countDataNodes(){
+		nodeCount[] = 0;
+
+		foreach(LayoutName node; Node){
+			if(name & node){
+				NodeName parity = Node.convert(node);
+
+				for(uint i = 0; i < Node.N; i++){
+					if(parity & (1 << i)){
+						nodeCount[i]++;
+					}
+				}
+			}
+		}
 	}
 }
 
