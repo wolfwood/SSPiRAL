@@ -1,12 +1,16 @@
 #include "types.h"
+#include <iostream>
+#include <forward_list>
 
 int main (int argc, char** argv) {
+
+  std::cout << "foo: " << sizeof(ulong) << " bar: " << sizeof(unsigned long long) << std::endl;
 
   // process args and initialize
   GlobalStats::setN(3);
 
   // -- collection of metalayouts
-  std::forward_List<MetaList> markov;
+  std::forward_list<MetaLayout> markov;
 
   // initialize metalayout for layouts of 1 node
 
@@ -30,4 +34,3 @@ int main (int argc, char** argv) {
 
   return 0;
 }
-`
