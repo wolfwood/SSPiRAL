@@ -3,9 +3,6 @@
 #include <forward_list>
 
 int main (int argc, char** argv) {
-
-  std::cout << "foo: " << sizeof(ulong) << " bar: " << sizeof(unsigned long long) << std::endl;
-
   // process args and initialize
   GlobalStats::setN(3);
 
@@ -15,12 +12,13 @@ int main (int argc, char** argv) {
   // initialize metalayout for layouts of 1 node
 
 
+
   for (GlobalStats::nodesInLayout = 0; GlobalStats::nodesInLayout <= GlobalStats::M; GlobalStats::nodesInLayout++) {
-    std::unordered_map<ulong, Layout> next;
+    layout_lookup next;
 
     // for each layout in each metalist generate the next layer of layouts and calculate their scores
     for (auto m : markov) {
-
+      m.generateLayouts(next);
     }
 
     // generate score to metalayout mapping

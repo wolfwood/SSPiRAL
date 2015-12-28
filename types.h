@@ -1,8 +1,12 @@
 #include <vector>
 #include <unordered_map>
 
-//typedef unsigned long long ulong;
+#include <iostream>
 
+//typedef unsigned long long ulong;
+class Layout;
+
+typedef std::unordered_map<ulong, Layout> layout_lookup;
 
 struct GlobalStats {
  public:
@@ -29,25 +33,32 @@ class Score : GlobalStats {
   std::vector<ulong> score;
 
  public:
-  void grow();
+  void grow(ulong i);
+  void add(Score& s);
+  void normalize();
 
+  friend std::ostream& operator<<(std::ostream& os, const Score& s);
 };
 
 struct Layout : GlobalStats {
  private:
   ulong nodes;
   Score score;
+  bool alive;
 
  public:
   Layout();
-  Layout getNext();
-  bool hasNext();
+  Layout(ulong name, Layout l);
+  void generateLayouts(layout_lookup& ll);
+
+  bool checkIfAlive();
+  bool recurseCheck(ulong n, ulong i = 1);
+
+
+  void normalize() {score.normalize();}
+  friend std::ostream& operator<<(std::ostream& os, const Layout& l);
 };
 
 struct MetaLayout : GlobalStats {
   std::unordered_map<ulong, Layout> layouts;
-};
-
-struct MarkovState : GlobalStats {
-
 };

@@ -1,5 +1,5 @@
 CXX=clang++
-CXXFLAGS=-std=c++14
+CXXFLAGS=-std=c++14 -O2
 
 SRCS=cpiral.cpp types.cpp
 OBJS=$(subst .cpp,.o,$(SRCS))
