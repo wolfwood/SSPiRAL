@@ -19,15 +19,6 @@ DataNode::DataNode(ulong n) {
   node = n;
 }
 
-DataNode DataNode::getNext() {
-  return DataNode(node + 1);
-}
-
-bool DataNode::hasNext() {
-  return !(node == M);
-}
-
-
 void Score::grow(ulong i) {
   score.push_back(i);
 }
@@ -80,40 +71,6 @@ bool Layout::recurseCheck(ulong n, ulong i) {
 
   return false;
 }
-
-/*
-bool checkIfAlive(){
-  bool flag = true;
-
-  for(NodeName dataNode = cast(NodeName)1; dataNode <= Node.maxNode; dataNode <<= 1){
-    LayoutName dataLayout = cast(LayoutName)1 << (dataNode - cast(NodeName)1);
-
-    if((name & dataLayout) == 0){
-      if(!recurseCheck(dataNode)){
-	return false;
-      }
-    }
-  }
-
-  return flag;
-}
-
-bool recurseCheck(NodeName bitmap, NodeName i = Node.one){
-  for(; i <= Node.maxNode; i++){
-    LayoutName nodeLayout = cast(LayoutName)1 << (i - Node.one);
-
-    if(name & nodeLayout){
-      NodeName newBitmap = i ^ bitmap;
-
-      if(newBitmap == 0 || recurseCheck(newBitmap, i+Node.one)){
-	return true;
-      }
-    }
-  }
-
-  return false;
-}
-*/
 
 void Layout::generateLayouts(layout_lookup& ll) {
   score.normalize();
@@ -172,12 +129,3 @@ void Score::normalize() {
     }
   }
 }
-
-/*
-void normalize(Counter layoutSize){
-  if(score.length > 3){
-    for(uint i  =1; i < score.length; i++){
-      score[$-i-1] /= i;
-    }
-  }
-}*/

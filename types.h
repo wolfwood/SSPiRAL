@@ -24,8 +24,6 @@ struct DataNode : GlobalStats {
 
  public:
   DataNode(ulong n);
-  DataNode getNext();
-  bool hasNext();
 };
 
 class Score : GlobalStats {
