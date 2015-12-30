@@ -21,9 +21,11 @@ int main (int argc, char** argv) {
     next.clear();
 
     // for each layout in each metalist generate the next layer of layouts and calculate their scores
-    for (auto c : curr) {
-      c.second.generateLayouts(next);
+    for (auto it = curr.begin(); it != curr.end();) {
+      (*it).second.generateLayouts(next);
       //std::cout << "do stufff" <<std::endl;
+
+      it = curr.erase(it);
     }
   }
 
