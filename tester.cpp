@@ -12,7 +12,7 @@ int main (int argc, char** argv) {
 
   temp1[0] = Layout();
 
-  for (GlobalStats::nodesInLayout = 0; GlobalStats::nodesInLayout <= GlobalStats::M; ++GlobalStats::nodesInLayout) {
+  for (GlobalStats::nodesInLayout = 0; GlobalStats::nodesInLayout < GlobalStats::M; ++GlobalStats::nodesInLayout) {
     layout_lookup& curr = (GlobalStats::nodesInLayout % 2) ? temp2 : temp1;
     layout_lookup& next = (GlobalStats::nodesInLayout % 2) ? temp1 : temp2;
 

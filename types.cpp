@@ -119,6 +119,8 @@ std::ostream& operator<<(std::ostream& os, const Score& s) {
     ++i;
   }
 
+  os << i << " 1" << std::endl;
+
   return os;
 }
 
