@@ -4,7 +4,7 @@
 
 int main (int argc, char** argv) {
   // process args and initialize
-  GlobalStats::setN(4);
+  GlobalStats::setN(5);
 
   std::cout << GlobalStats::N << " of " << GlobalStats::M << std::endl;
 
