@@ -79,6 +79,23 @@ uint64_t canonicalize(uint64_t layout) {
   return newlayout;
 }
 */
+
+inline uint64_t node2nauty(uint64_t node) {
+  return node - 1;
+}
+
+inline uint64_t nauty2node(uint64_t nauty) {
+  return nauty + 1;
+}
+
+inline uint64_t node2layout(uint64_t node) {
+  return 1 << (node - 1);
+}
+
+inline uint64_t nauty2layout(uint64_t node) {
+  return 1 << node;
+}
+
 uint64_t di_canonicalize(uint64_t layout) {
   graph g[MAXN*MAXM], cg[MAXN*MAXM];
   int lab[MAXN],ptn[MAXN],orbits[MAXN];
@@ -102,22 +119,22 @@ uint64_t di_canonicalize(uint64_t layout) {
 
 
 
-  for (auto j = 0; j < num_nodes; ++j) {
+  for (auto j = 1; j <= num_nodes; ++j) {
 
-    uint64_t node_id = j+1, layout_bit = 1 << j, nauty_id = j;
+    //uint64_t node_id = j+1, layout_bit = 1 << j, nauty_id = j;
 
-    if((layout & layout_bit) != 0) {
-      std::cout << "  " << node_id << " -> " << node_id << std::endl;
+    if((layout & node2layout(j)) != 0) {
+      std::cout << "  " << j << " -> " << j << std::endl;
 
-      ADDONEARC(g, nauty_id,nauty_id,m);
+      ADDONEARC(g, node2nauty(j),node2nauty(j),m);
     }
 
     for (auto i = 1; i <= num_nodes; i<<=1) {
-      uint64_t data_id = i, data_layout_id = 1<<(i-1), data_nauty_id = i -1;
-      if ((data_id & node_id) != 0 && data_id != node_id) {
-	std::cout << "  " << data_id << " -> " << node_id << std::endl;
+      //uint64_t data_id = i, data_layout_id = 1<<(i-1), data_nauty_id = i -1;
+      if ((i & j) != 0 && i != j) {
+	std::cout << "  " << i << " -> " << j << std::endl;
 
-	ADDONEARC(g,data_nauty_id,nauty_id,m);
+	ADDONEARC(g,node2nauty(i),node2nauty(j),m);
       }
     }
   }
@@ -132,17 +149,17 @@ uint64_t di_canonicalize(uint64_t layout) {
   for (auto i = 0; i < n; ++i) {
     //std::cout << "    " << lab[i] << " , " << i << std::endl;
 
-    uint64_t node = (1 << lab[i]);
+    //uint64_t node = (1 << lab[i]);
 
-    if (layout & node) {
-      uint64_t rename = (1 << i);
+    if (layout & nauty2layout(lab[i])) {
+      //uint64_t rename = (1 << i);
 
-      if (newlayout & rename) {
+      if (newlayout & nauty2layout(i)) {
 	std::cout << "eff dat" << std::endl;
       }
 
-      std::cout << "( " << lab[i]+1 << ", " << i+1 << " ) ";
-      newlayout |= rename;
+      std::cout << "( " << nauty2node(lab[i]) << ", " << nauty2node(i) << " ) ";
+      newlayout |= nauty2layout(i);
     }
   }
 
