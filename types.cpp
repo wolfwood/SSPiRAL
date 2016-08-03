@@ -1,5 +1,6 @@
 #include <cassert>
 #include "types.h"
+#include "canonicalizer.h"
 
 ulong GlobalStats::N=0;
 ulong GlobalStats::M=0;
@@ -15,15 +16,11 @@ void GlobalStats::setN(ulong n){
   }
 }
 
-DataNode::DataNode(ulong n) {
-  node = n;
-}
-
-void Score::grow(ulong i) {
+void Score::grow(score_t i) {
   score.push_back(i);
 }
 
-Layout::Layout(ulong name, Layout l) : nodes(name), score(l.score) {
+Layout::Layout(ulong name, Layout l, score_t copies) : nodes(name), score(l.score) {
   if (l.alive) {
     alive = true;
   } else {
@@ -31,7 +28,7 @@ Layout::Layout(ulong name, Layout l) : nodes(name), score(l.score) {
   }
 
   if (alive) {
-    score.grow(1);
+    score.grow(copies);
   } else {
     score.grow(0);
   }
@@ -94,6 +91,42 @@ void Layout::generateLayouts(layout_lookup& ll) {
   }
 }
 
+void Layout::generateNautyLayouts(layout_lookup& ll) {
+  score.normalize();
+
+  int orbits[MAXN];
+  get_orbits(nodes, orbits);
+
+  uint64_t k = 0;
+  for (uint64_t i = 0; i < M; ++i) {
+    layout_t temp = nodes | nauty2layout(orbits[i]);
+    std::cout << nauty2node(i) << " " << nauty2node(orbits[i]) << std::endl;
+
+    if ((temp != nodes) && (i == 0 || orbits[k] < orbits[i])) {
+      score_t multiplier = 1;
+      k = i;
+
+      for (uint64_t j = i+1; j < M; ++j) {
+	if (orbits[j] == orbits[i]) {
+	  ++multiplier;
+	}
+      }
+
+      std::cout << nodes << " " << temp << " : " << multiplier << std::endl;
+
+      auto result = ll.find(temp);
+
+      if (result != ll.end()) {
+	result->second.score.addMul(score, multiplier);
+      } else {
+	ll.emplace(std::piecewise_construct,
+		   std::forward_as_tuple(temp),
+		   std::forward_as_tuple(temp, *this));
+      }
+    }
+  }
+}
+
 std::ostream& operator<<(std::ostream& os, const Layout& l) {
   os << l.score;
 
@@ -106,6 +139,18 @@ void Score::add(Score& s) {
 
   for (;it != score.end() && o_it != s.score.end();) {
     *it += *o_it;
+
+    ++it;
+    ++o_it;
+  }
+}
+
+void Score::addMul(Score& s, score_t multiplier) {
+  auto it = score.begin();
+  auto o_it = s.score.begin();
+
+  for (;it != score.end() && o_it != s.score.end();) {
+    *it += (*o_it) * multiplier;
 
     ++it;
     ++o_it;
@@ -126,7 +171,7 @@ std::ostream& operator<<(std::ostream& os, const Score& s) {
 
 void Score::normalize() {
   if (score.size() > 3) {
-    for(ulong i = 1; i < score.size(); ++i) {
+    for(uint8_t i = 1; i < score.size(); ++i) {
       score[score.size() - i - 1] /= i;
     }
   }

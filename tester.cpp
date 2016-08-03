@@ -4,7 +4,7 @@
 
 int main (int argc, char** argv) {
   // process args and initialize
-  GlobalStats::setN(5);
+  GlobalStats::setN(2);
 
   std::cout << GlobalStats::N << " of " << GlobalStats::M << std::endl;
 
@@ -15,8 +15,6 @@ int main (int argc, char** argv) {
   for (GlobalStats::nodesInLayout = 0; GlobalStats::nodesInLayout < GlobalStats::M; ++GlobalStats::nodesInLayout) {
     layout_lookup& curr = (GlobalStats::nodesInLayout % 2) ? temp2 : temp1;
     layout_lookup& next = (GlobalStats::nodesInLayout % 2) ? temp1 : temp2;
-
-    std::cout << "int the loop" <<std::endl;
 
     next.clear();
 
