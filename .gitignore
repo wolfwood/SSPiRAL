@@ -4,3 +4,9 @@ cpiral
 *.pdf
 massif.out.*
 test
+*.clang
+*.gcc
+nauty25r9/
+canon
+spiralnauty
+*.tar.gz
