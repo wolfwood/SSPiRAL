@@ -93,12 +93,12 @@ uint64_t nauty2node(uint64_t nauty) {
 }
 
 uint64_t node2layout(uint64_t node) {
-  return 1 << (node - 1);
+  return 1ULL << (node - 1);
 }
 
 uint64_t nauty2layout(uint64_t nauty) {
   //return 1 << ((num_nodes - 1) - node);
-  return 1 << nauty;
+  return 1ULL << nauty;
 }
 
 void recurse_print_orbit(int* orbits, uint64_t start) {

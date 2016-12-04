@@ -1,37 +1,52 @@
 #include <cassert>
 #include "types.h"
-#include "canonicalizer.h"
 
-ulong GlobalStats::N=0;
-ulong GlobalStats::M=0;
-ulong GlobalStats::nodesInLayout=0;
+node_t GlobalStats::N=0;
+node_t GlobalStats::M=0;
+node_t GlobalStats::nodesInLayout=0;
 
-void GlobalStats::setN(ulong n){
+void GlobalStats::setN(node_t n){
   if (n > 1 && n < 7) {
     N = n;
-    M = (1 << n) - 1;
+    M = (node_t(1) << n) - 1;
     nodesInLayout = 0;
   } else {
     assert(false); // This is not an appropriate value for N
   }
 }
 
-void Score::grow(score_t i) {
-  score.push_back(i);
+void Score::grow(score_t alive, score_t cnt) {
+  score.emplace_back(alive, cnt);
+  count.emplace_back(1);
 }
 
-Layout::Layout(ulong name, Layout l, score_t copies) : nodes(name), score(l.score) {
+void Score::grow(bool live, score_t cnt) {
+  if (live) {
+    score.emplace_back(cnt, cnt);
+  } else {
+    score.emplace_back(0, cnt);
+  }
+  count.emplace_back(1);
+}
+
+score_t Score::copies() {
+  if (score.size() == 0) {
+    return 1;
+  } else {
+    return score.back().second;
+  }
+}
+
+Layout::Layout(layout_t name, Layout l, score_t copies) : nodes(name), score(l.score) {
+  score.mul(copies);
+
   if (l.alive) {
     alive = true;
   } else {
     alive = checkIfAlive();
   }
 
-  if (alive) {
-    score.grow(copies);
-  } else {
-    score.grow(0);
-  }
+  score.grow(alive, copies);
 }
 
 Layout::Layout() : score() {
@@ -40,12 +55,25 @@ Layout::Layout() : score() {
 }
 
 bool Layout::checkIfAlive() {
-  for(ulong n = 1; n <= M; n <<= 1) {
-    ulong l = 1 << (n - 1);
+#if 1
+  // information theory says no
+  if (GlobalStats::N > GlobalStats::nodesInLayout+1) {
+    return false;
+  }
+#endif
+
+  for(node_t n = 1; n <= M; n <<= 1) {
+    layout_t l = layout_t(1) << (n - 1);
 
     if ((l & nodes) == 0) {
-      if (!recurseCheck(n)) {
+      //if (!iterativeSimpleCheck(n)) {
+      if (!iterativeCheck(n)) {
+	//assert(!recurseCheck(n));
+	//assert(!iterativeCheck(n));
 	return false;
+      } else {
+	//assert(recurseCheck(n));
+	//assert(iterativeCheck(n));
       }
     }
   }
@@ -53,12 +81,92 @@ bool Layout::checkIfAlive() {
   return true;
 }
 
-bool Layout::recurseCheck(ulong n, ulong i) {
-  for(; i <= M; ++i) {
-    ulong l = 1 << (i - 1);
+bool Layout::iterativeCheck(node_t n) {
+  // lazy so over allocate and use depth as a sentinel
+  node_t Is[GlobalStats::nodesInLayout+2];
+  int64_t depth = 1;
+  node_t i = 0;
+  node_t temp = n;
+
+  while (0 < depth) {
+    ++i;
+    layout_t l = layout_t(1) << (i - 1);
 
     if (l & nodes) {
-      ulong temp = i ^ n;
+      Is[depth] = i;
+      temp ^= i;
+
+      /*
+      node_t t = n;
+      for (node_t j = 1; j <= depth; ++j) {
+	t ^= Is[j];
+      }
+
+      assert(t == temp);
+      */
+      if (temp == 0) {
+	return true;
+      }
+
+      if (GlobalStats::M > i ){//&& depth < GlobalStats::N) {
+	++depth;
+	Is[depth] = 0;
+      } else {
+	temp ^= Is[depth]; // undo the use of this node
+	--depth;
+	temp ^= Is[depth]; // undo the use of this node
+	i = Is[depth];
+      }
+    } else if (GlobalStats::M == i) {
+      --depth;
+      temp ^= Is[depth]; // undo the use of this node
+      i = Is[depth];
+    }
+  }
+
+  return false;
+}
+
+bool Layout::iterativeSimpleCheck(node_t n) {
+  node_t Is[GlobalStats::nodesInLayout+1];
+  int64_t depth = 0;
+  Is[depth] = 0;
+
+  while (0 <= depth) {
+    assert(GlobalStats::nodesInLayout+1 >= depth);
+    ++Is[depth];
+    layout_t l = layout_t(1) << (Is[depth] - 1);
+
+    if (l & nodes) {
+      node_t temp = n;
+      for (node_t i = 0; i <= depth; ++i) {
+	temp ^= Is[i];
+      }
+
+      if (temp == 0) {
+	return true;
+      }
+
+      if (GlobalStats::M > Is[depth]) {
+	++depth;
+	Is[depth] = Is[depth-1];
+      } else {
+	--depth;
+      }
+    } else if (GlobalStats::M == Is[depth]) {
+      --depth;
+    }
+  }
+
+  return false;
+}
+
+bool Layout::recurseCheck(node_t n, node_t i) {
+  for(; i <= M; ++i) {
+    layout_t l = layout_t(1) << (i - 1);
+
+    if (l & nodes) {
+      layout_t temp = i ^ n;
 
       if (temp == 0 || recurseCheck(temp, i+1)) {
 	return true;
@@ -70,10 +178,10 @@ bool Layout::recurseCheck(ulong n, ulong i) {
 }
 
 void Layout::generateLayouts(layout_lookup& ll) {
-  score.normalize();
+  //score.normalize();
 
-  for ( ulong n = 1; n <= ~(~(0UL) << M); n <<= 1) {
-    ulong temp = nodes | n;
+  for ( layout_t n = 1; n <= ~(~(0UL) << M); n <<= 1) {
+   layout_t temp = nodes | n;
 
     if (temp != nodes) {
       auto result = ll.find(temp);
@@ -81,47 +189,19 @@ void Layout::generateLayouts(layout_lookup& ll) {
       if (result != ll.end()) {
 	result->second.score.add(score);
       } else {
+#ifdef GOOGLE
+	ll.insert(std::pair<layout_t, Layout>(temp, Layout(temp, *this)));
+#else
+#ifdef SPARSEPP
+	ll.insert(std::pair<layout_t, Layout>(temp, Layout(temp, *this)));
+#else
 	ll.emplace(std::piecewise_construct,
 		   std::forward_as_tuple(temp),
 		   std::forward_as_tuple(temp, *this));
+#endif
+#endif
 
 	//ll.emplace(temp, Layout(temp, *this));
-      }
-    }
-  }
-}
-
-void Layout::generateNautyLayouts(layout_lookup& ll) {
-  score.normalize();
-
-  int orbits[MAXN];
-  get_orbits(nodes, orbits);
-
-  uint64_t k = 0;
-  for (uint64_t i = 0; i < M; ++i) {
-    layout_t temp = nodes | nauty2layout(orbits[i]);
-    std::cout << nauty2node(i) << " " << nauty2node(orbits[i]) << std::endl;
-
-    if ((temp != nodes) && (i == 0 || orbits[k] < orbits[i])) {
-      score_t multiplier = 1;
-      k = i;
-
-      for (uint64_t j = i+1; j < M; ++j) {
-	if (orbits[j] == orbits[i]) {
-	  ++multiplier;
-	}
-      }
-
-      std::cout << nodes << " " << temp << " : " << multiplier << std::endl;
-
-      auto result = ll.find(temp);
-
-      if (result != ll.end()) {
-	result->second.score.addMul(score, multiplier);
-      } else {
-	ll.emplace(std::piecewise_construct,
-		   std::forward_as_tuple(temp),
-		   std::forward_as_tuple(temp, *this));
       }
     }
   }
@@ -137,11 +217,19 @@ void Score::add(Score& s) {
   auto it = score.begin();
   auto o_it = s.score.begin();
 
+  auto c_it = count.begin();
+  auto c_o_it = s.count.begin();
+
   for (;it != score.end() && o_it != s.score.end();) {
-    *it += *o_it;
+    it->first += o_it->first;
+    it->second += o_it->second;
 
     ++it;
     ++o_it;
+
+    *c_it += *c_o_it;
+    ++c_it;
+    ++c_o_it;
   }
 }
 
@@ -149,30 +237,54 @@ void Score::addMul(Score& s, score_t multiplier) {
   auto it = score.begin();
   auto o_it = s.score.begin();
 
+  auto c_it = count.begin();
+  auto c_o_it = s.count.begin();
+
   for (;it != score.end() && o_it != s.score.end();) {
-    *it += (*o_it) * multiplier;
+    it->first += o_it->first * multiplier;
+    it->second += o_it->second * multiplier;
 
     ++it;
     ++o_it;
+
+    *c_it += *c_o_it;
+    ++c_it;
+    ++c_o_it;
+  }
+}
+
+void Score::mul(score_t multiplier) {
+  if (multiplier > 1) {
+    for (auto &s : score) {
+      s.first *= multiplier;
+      s.second *= multiplier;
+    }
   }
 }
 
 std::ostream& operator<<(std::ostream& os, const Score& s) {
-  ulong i = 0;
-  for (auto sco = s.score.crbegin(); sco != s.score.crend(); ++sco) {
-    os << i << " " << *sco << std::endl;
+  node_t i = 0;
+  auto c = s.count.crbegin();
+  for (auto sco = s.score.crbegin(); sco != s.score.crend(); ++sco, ++c) {
+    os << i << " " << sco->first << " " << sco->second << " " << *c << std::endl;
     ++i;
   }
 
-  os << i << " 1" << std::endl;
+  os << i << " 0 1" << std::endl;
 
   return os;
 }
 
 void Score::normalize() {
-  if (score.size() > 3) {
-    for(uint8_t i = 1; i < score.size(); ++i) {
-      score[score.size() - i - 1] /= i;
-    }
+  //if (score.size() > 3) {
+  for(node_t i = 1; i < score.size(); ++i) {
+    score[score.size() - i - 1].first /= i;
+    score[score.size() - i - 1].second /= i;
   }
+  //}
+
+  /*if (score.size()) {
+    score.back().first /= count;
+    score.back().second /= count;
+    }*/
 }

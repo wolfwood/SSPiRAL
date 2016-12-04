@@ -4,7 +4,7 @@
 
 int main (int argc, char** argv) {
   // process args and initialize
-  GlobalStats::setN(5);
+  GlobalStats::setN(2);
 
   std::cout << GlobalStats::N << " of " << GlobalStats::M << std::endl;
 
@@ -17,9 +17,10 @@ int main (int argc, char** argv) {
   temp2.set_deleted_key(0xFFFFFFFE);
 #endif
 
+
   temp1[0] = Layout();
 
-  for (GlobalStats::nodesInLayout = 0; GlobalStats::nodesInLayout < 8; ++GlobalStats::nodesInLayout) {
+  for (GlobalStats::nodesInLayout = 0; GlobalStats::nodesInLayout < GlobalStats::M; ++GlobalStats::nodesInLayout) {
     layout_lookup& curr = (GlobalStats::nodesInLayout % 2) ? temp2 : temp1;
     layout_lookup& next = (GlobalStats::nodesInLayout % 2) ? temp1 : temp2;
 
@@ -31,14 +32,14 @@ int main (int argc, char** argv) {
       //std::cout << "do stufff" <<std::endl;
 
 #ifdef GOOGLE
+      curr.erase(it);
       ++it;
 #else
-      //++it;
       it = curr.erase(it);
 #endif
     }
   }
-  /*
+
   for (auto l : temp1) {
     l.second.normalize();
     std::cout << l.second;
@@ -48,6 +49,6 @@ int main (int argc, char** argv) {
     l.second.normalize();
     std::cout << l.second;
   }
-  */
+
   return 0;
 }

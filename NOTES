@@ -1,0 +1,2 @@
+* "1 << X" is unsafe unless annotated, 1ULL, or cast.
+* the longest recovery chain cannot be longer than N?

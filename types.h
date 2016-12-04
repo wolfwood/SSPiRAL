@@ -1,6 +1,8 @@
 #include <vector>
 #include <unordered_map>
-
+#include <map>
+#include <sparsehash/dense_hash_map>
+#include "sparsepp/sparsepp.h"
 #include <iostream>
 
 class Layout;
@@ -9,7 +11,15 @@ typedef ulong node_t;    // this needs >= N bits
 typedef ulong layout_t;  // needs >= M bits
 typedef ulong score_t;   // enough bits to hold M choose M/2 ?
 
-typedef std::unordered_map<layout_t, Layout> layout_lookup;
+#ifdef GOOGLE
+typedef google::dense_hash_map<layout_t, Layout> layout_lookup;
+#else
+#ifdef SPARSEPP
+typedef spp::sparse_hash_map<layout_t, Layout> layout_lookup;
+#else
+typedef std::map<layout_t, Layout> layout_lookup;
+#endif
+#endif
 
 struct GlobalStats {
  public:
@@ -31,13 +41,17 @@ struct DataNode : GlobalStats {
 */
 class Score : GlobalStats {
  private:
-  std::vector<score_t> score;
+  std::vector<std::pair<score_t, score_t>> score;
+  std::vector<node_t> count;
 
  public:
-  void grow(score_t i);
+  void grow(score_t live, score_t count);
+  void grow(bool alive, score_t count);
   void add(Score& s);
   void addMul(Score& s, score_t multiplier);
+  void mul(score_t multiplier);
   void normalize();
+  score_t copies();
 
   friend std::ostream& operator<<(std::ostream& os, const Score& s);
 };
@@ -55,8 +69,9 @@ struct Layout : GlobalStats {
   void generateNautyLayouts(layout_lookup& ll);
 
   bool checkIfAlive();
-  bool recurseCheck(layout_t n, node_t i = 1);
-
+  bool recurseCheck(node_t n, node_t i = 1);
+  bool iterativeCheck(node_t n);
+  bool iterativeSimpleCheck(node_t n);
 
   void normalize() {score.normalize();}
   friend std::ostream& operator<<(std::ostream& os, const Layout& l);
