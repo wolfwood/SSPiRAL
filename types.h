@@ -1,3 +1,6 @@
+#if !defined(cpiral_types_h_guard_)
+#define cpiral_types_h_guard_
+
 #include <vector>
 #include <unordered_map>
 #include <map>
@@ -23,12 +26,12 @@ typedef std::map<layout_t, Layout> layout_lookup;
 
 struct GlobalStats {
  public:
-  static node_t N;
-  static node_t M;
+  static const node_t N;
+  static const node_t M;
 
   static node_t nodesInLayout;
 
-  static void setN(node_t n);
+  //static void setN(node_t n);
 };
 /*
 struct DataNode : GlobalStats {
@@ -80,3 +83,4 @@ struct Layout : GlobalStats {
 struct MetaLayout : GlobalStats {
   std::unordered_map<layout_t, Layout> layouts;
 };
+#endif

@@ -23,7 +23,7 @@ void Layout::generateNautyLayouts(layout_lookup& ll) {
       }
 
       //if (GlobalStats::nodesInLayout) {
-	multiplier *= score.copies();
+        //multiplier *= score.copies();
 
 	//multiplier /= GlobalStats::nodesInLayout;
       //}

@@ -1,49 +1,56 @@
-CXX=g++
-CXXFLAGS=-std=c++14 -O3 -march=native -Werror -flto
-GCCFLAGS=-O3 -floop-interchange -ftree-loop-distribution -floop-strip-mine -floop-block -ftree-vectorize -flto=4
-CLANGFLAGS=-flto -Ofast
-CXXDEBUGFLAGS=-std=c++14 -O0 -march=native -g -Werror -flto -pg
+CXXS=g++ clang++
+CXXFLAGS=-std=c++14
+CFLAGSgcc= -Werror -O3 -march=native -floop-interchange -ftree-loop-distribution -floop-strip-mine -floop-block -ftree-vectorize -flto=4
+CFLAGSclangcc= -Werror -march=native -flto -Ofast
 
-NAUTY25FLAGS=-DWORDSIZE=64 -DMAXN=WORDSIZE -I nauty25r9
-NAUTYFLAGS=-DWORDSIZE=64 -DMAXN=WORDSIZE -I nauty26r5.clang
+CXXDEBUGFLAGS=-std=c++14 -g -Werror -flto
 
-SRCS=cpiral.cpp types.cpp
+NAUTY=nauty26r7
+NAUTYFLAGS=-DWORDSIZE=64 -DMAXN=WORDSIZE -I $(NAUTY).$*
+
+HDRS=types.h
+SRCS=cpiral.cpp $(subst .h,.cpp,$(HDRS))
 OBJS=$(subst .cpp,.o,$(SRCS))
 
+EXES=$(patsubst %,bench.%,$(CXXS)) $(patsubst %,spiral.%,$(CXXS)) $(patsubst %,benchnauty.%,$(CXXS)) $(patsubst %,spiralnauty.%,$(CXXS))
+
 # cpiral
-all: canon.clang canon canon.gcc spiralnauty.clang spiralnauty.gcc spiralnauty test.clang test.gcc test
+all: $(EXES)
 
-cpiral: $(SRCS)
-	$(CXX) $(CXXFLAGS) -o $@ $(SRCS)
 
-test: traditional.cpp tester.cpp types.cpp types.h
-	$(CXX) $(CXXDEBUGFLAGS) -DGOOGLE -o $@ traditional.cpp types.cpp
+spiral.%: $(SRCS) $(HDRS)
+	$* $(CXXFLAGS) ${CFLAGS$(*:%++=%cc)} -DSPIRAL_N=4 -o $@ $(SRCS)
 
-test.gcc: tester.cpp types.cpp types.h
-	$(CXX) $(CXXFLAGS) $(GCCFLAGS) -o $@ tester.cpp types.cpp
+spiralnauty.%: $(SRCS) $(HDRS) canonicalizer.cpp canonicalizer.h typesnauty.cpp $(NAUTY).%/nauty.a
+	$* $(CXXFLAGS) ${CFLAGS$(*:%++=%cc)} $(NAUTYFLAGS) -DSPIRALNAUTY -DSPIRAL_N=4 -o $@ $(SRCS) canonicalizer.cpp typesnauty.cpp $(NAUTY).$*/nauty.a
 
-test.clang: tester.cpp types.cpp types.h
-	clang++ $(CXXFLAGS) $(CLANGFLAGS) -o $@ tester.cpp types.cpp
+spiral.debug.%: $(SRCS) $(HDRS)
+	$* ${CXXDEBUGFLAGS} -DSPIRAL_N=4 -o $@ $(SRCS)
 
-canon: canon_test.cpp canonicalizer.cpp canonicalizer.h
-	$(CXX) $(CXXFLAGS) $(NAUTY25FLAGS) -o $@ canon_test.cpp canonicalizer.cpp nauty25r9/nauty.a
+bench.%: $(SRCS) $(HDRS)
+	$* $(CXXFLAGS) ${CFLAGS$(*:%++=%cc)} -DSPIRAL_N=5 -DBENCH=8 -o $@ $(SRCS)
 
-canon.clang: canon_test.cpp canonicalizer.cpp canonicalizer.h
-	clang++ $(CXXFLAGS) $(CLANGFLAGS) $(NAUTYFLAGS) -o $@ canon_test.cpp canonicalizer.cpp nauty26r5.clang/nauty.a
+benchnauty.%: $(SRCS) $(HDRS) canonicalizer.cpp canonicalizer.h typesnauty.cpp $(NAUTY).%/nauty.a
+	$* $(CXXFLAGS) ${CFLAGS$(*:%++=%cc)} $(NAUTYFLAGS) -DSPIRALNAUTY -DSPIRAL_N=5 -DBENCH=8 -o $@ $(SRCS) canonicalizer.cpp typesnauty.cpp $(NAUTY).$*/nauty.a
 
-canon.gcc: canon_test.cpp canonicalizer.cpp canonicalizer.h
-	g++ $(CXXFLAGS) $(NAUTYFLAGS) $(GCCFLAGS) -o $@ canon_test.cpp canonicalizer.cpp nauty26r5.gcc/nauty.a
 
-spiralnauty: spiralnauty.cpp types.cpp types.h typesnauty.cpp canonicalizer.cpp canonicalizer.h
-	g++ $(CXXFLAGS) $(NAUTY25FLAGS) -O1 -fno-lto -o $@ spiralnauty.cpp types.cpp typesnauty.cpp canonicalizer.cpp nauty25r9/nauty.a
+$(NAUTY).tar.gz:
+	wget http://pallini.di.uniroma1.it/$(NAUTY).tar.gz
 
-spiralnauty.clang: spiralnauty.cpp types.cpp types.h canonicalizer.cpp canonicalizer.h
-	clang++ $(CXXFLAGS) $(CLANGFLAGS) $(NAUTYFLAGS) -o $@ spiralnauty.cpp types.cpp typesnauty.cpp canonicalizer.cpp nauty26r5.clang/nauty.a
+$(NAUTY).%: $(NAUTY).tar.gz
+	tar xf $<
+	mv $(NAUTY) $@
+	cd $@ && sed -i "s/ar crs/$(if $(filter $*,g++),gcc-ar,ar) crs/g" makefile.in
+	cd $@ && CC=$(patsubst clangcc,clang,$(*:%++=%cc)) CFLAGS="${CFLAGS$(*:%++=%cc)}" ./configure
 
-spiralnauty.gcc: spiralnauty.cpp types.cpp types.h canonicalizer.cpp canonicalizer.h
-	g++ $(CXXFLAGS) $(NAUTYFLAGS) $(GCCFLAGS) -o $@ spiralnauty.cpp types.cpp typesnauty.cpp canonicalizer.cpp nauty26r5.gcc/nauty.a
+$(NAUTY).%/nauty.a: $(NAUTY).%
+	cd $(@D) && $(MAKE)
+
 
 clean:
-	rm test canon canon.gcc canon.clang cpiral
+	rm $(EXES)
+
+#test.%:
+#	echo sed -i 's/ar crs/$(if $(filter $*,g++),gcc-ar,ar) crs/g' $@/makefile.in
 
 # gcc -o myprog -DWORDSIZE=64 -DMAXN=WORDSIZE myprog.c nautyL1.a

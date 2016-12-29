@@ -1,19 +1,27 @@
+/*
+#ifndef SPIRAL_N
+#define SPIRAL_N 4
+#endif
+*/
+
 #include <cassert>
 #include "types.h"
 
-node_t GlobalStats::N=0;
-node_t GlobalStats::M=0;
+constexpr node_t MfromN(node_t n) { return (node_t(1) << n) - 1;}
+
+const node_t GlobalStats::N=SPIRAL_N ;
+const node_t GlobalStats::M=MfromN(N);
 node_t GlobalStats::nodesInLayout=0;
 
-void GlobalStats::setN(node_t n){
+/*void GlobalStats::setN(node_t n){
   if (n > 1 && n < 7) {
     N = n;
-    M = (node_t(1) << n) - 1;
+    M = MfromN(N);
     nodesInLayout = 0;
   } else {
     assert(false); // This is not an appropriate value for N
   }
-}
+  }*/
 
 void Score::grow(score_t alive, score_t cnt) {
   score.emplace_back(alive, cnt);
@@ -178,7 +186,9 @@ bool Layout::recurseCheck(node_t n, node_t i) {
 }
 
 void Layout::generateLayouts(layout_lookup& ll) {
-  //score.normalize();
+#ifndef DENORMALIZE
+  score.normalize();
+#endif
 
   for ( layout_t n = 1; n <= ~(~(0UL) << M); n <<= 1) {
    layout_t temp = nodes | n;

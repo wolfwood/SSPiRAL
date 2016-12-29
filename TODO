@@ -1,0 +1,19 @@
+* PERF HACKS
+- estimate collection size ahead of time to avoid 'growing' allocations
+- different allocators: stdlib, tcmalloc, jemalloc
+- glibc vs. musl
+- c++ vs rust vs D
+- tune custom types based on SPIRAL_N size
+- tune nauty WORDSIZE and MAXN and lib variant based on SPIRAL_N size
+
+* TESTS
+- liveness test
+- ancestor enumeration
+- correctness with short types
+
+* CORRECTNESS
+- determine fudge factor for nauty de-duped layouts
+
+* OUTPUT
+- print dot format graphs
+- print maxima systems of equations	

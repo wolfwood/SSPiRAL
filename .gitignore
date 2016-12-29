@@ -6,6 +6,8 @@ massif.out.*
 test
 *.clang
 *.gcc
+*.clang++
+*.g++
 nauty25r9/
 canon
 spiralnauty
