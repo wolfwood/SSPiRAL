@@ -2,10 +2,6 @@
 #define cpiral_types_h_guard_
 
 #include <vector>
-#include <unordered_map>
-#include <map>
-#include <sparsehash/dense_hash_map>
-#include "sparsepp/sparsepp.h"
 #include <iostream>
 
 class Layout;
@@ -15,11 +11,15 @@ typedef ulong layout_t;  // needs >= M bits
 typedef ulong score_t;   // enough bits to hold M choose M/2 ?
 
 #ifdef GOOGLE
+#include <sparsehash/dense_hash_map>
 typedef google::dense_hash_map<layout_t, Layout> layout_lookup;
 #else
 #ifdef SPARSEPP
+#include "sparsepp/sparsepp.h"
 typedef spp::sparse_hash_map<layout_t, Layout> layout_lookup;
 #else
+//#include <unordered_map>
+#include <map>
 typedef std::map<layout_t, Layout> layout_lookup;
 #endif
 #endif
