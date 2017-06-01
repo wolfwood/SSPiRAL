@@ -10,9 +10,38 @@
 
 class Layout;
 
-typedef ulong node_t;    // this needs >= N bits
-typedef ulong layout_t;  // needs >= M bits
-typedef ulong score_t;   // enough bits to hold M choose M/2 ?
+typedef uint8_t node_t;    // this needs >= N bits
+#if SPIRAL_N < 4
+typedef uint8_t layout_t;  // needs >= M bits
+#ifndef DENORMALIZE
+typedef uint16_t score_t;
+#else
+typedef uint16_t score_t;   // enough bits to hold M choose M/2 ?
+#endif
+#else
+#if SPIRAL_N == 4
+typedef uint16_t layout_t;  // needs >= M bits
+#ifndef DENORMALIZE
+typedef uint16_t score_t;
+#else
+typedef uint32_t score_t;   // enough bits to hold M choose M/2 ?
+#endif
+#else
+#if SPIRAL_N == 5
+typedef uint32_t layout_t;  // needs >= M bits
+typedef uint32_t score_t;   // enough bits to hold M choose M/2 ?
+#else
+#if SPIRAL_N == 6
+typedef uint64_t layout_t;  // needs >= M bits
+typedef uint64_t score_t;   // enough bits to hold M choose M/2 ?
+#else
+#error SPIRAL_N must be <= 6 for now
+#endif
+#endif
+#endif
+#endif
+
+
 
 #ifdef GOOGLE
 typedef google::dense_hash_map<layout_t, Layout> layout_lookup;
@@ -45,7 +74,10 @@ struct DataNode : GlobalStats {
 class Score : GlobalStats {
  private:
   std::vector<std::pair<score_t, score_t>> score;
-  std::vector<node_t> count;
+
+#ifdef COUNT
+  std::vector<score_t> count;
+#endif
 
  public:
   void grow(score_t live, score_t count);

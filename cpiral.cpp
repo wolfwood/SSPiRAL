@@ -14,7 +14,7 @@ int main (int argc, char** argv) {
   init_canon(GlobalStats::N, GlobalStats::M);
 #endif
 
-  std::cout << GlobalStats::N << " of " << GlobalStats::M << std::endl;
+  std::cout << score_t(GlobalStats::N) << " of " << score_t(GlobalStats::M) << std::endl;
 
   layout_lookup temp1, temp2;
 
@@ -22,6 +22,7 @@ int main (int argc, char** argv) {
 
 #ifdef BENCH
   for (GlobalStats::nodesInLayout = 0; GlobalStats::nodesInLayout < BENCH; ++GlobalStats::nodesInLayout) {
+    std::cout << score_t(GlobalStats::nodesInLayout) << std::endl;
 #else
   for (GlobalStats::nodesInLayout = 0; GlobalStats::nodesInLayout < GlobalStats::M; ++GlobalStats::nodesInLayout) {
 #endif
@@ -44,12 +45,16 @@ int main (int argc, char** argv) {
 
 #ifndef BENCH
   for (auto l : temp1) {
+#ifndef DENORMALIZE
     l.second.normalize();
+#endif
     std::cout << l.second;
   }
 
   for (auto l : temp2) {
+#ifndef DENORMALIZE
     l.second.normalize();
+#endif
     std::cout << l.second;
   }
 #endif

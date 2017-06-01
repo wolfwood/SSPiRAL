@@ -25,7 +25,9 @@ node_t GlobalStats::nodesInLayout=0;
 
 void Score::grow(score_t alive, score_t cnt) {
   score.emplace_back(alive, cnt);
+#ifdef COUNT
   count.emplace_back(1);
+#endif
 }
 
 void Score::grow(bool live, score_t cnt) {
@@ -34,7 +36,9 @@ void Score::grow(bool live, score_t cnt) {
   } else {
     score.emplace_back(0, cnt);
   }
+#ifdef COUNT
   count.emplace_back(1);
+#endif
 }
 
 score_t Score::copies() {
@@ -70,12 +74,12 @@ bool Layout::checkIfAlive() {
   }
 #endif
 
-  for(node_t n = 1; n <= M; n <<= 1) {
+  for(node_t n = 1; n <= GlobalStats::M; n <<= 1) {
     layout_t l = layout_t(1) << (n - 1);
 
     if ((l & nodes) == 0) {
-      //if (!iterativeSimpleCheck(n)) {
-      if (!iterativeCheck(n)) {
+      if (!iterativeSimpleCheck(n)) {
+      //if (!iterativeCheck(n)) {
 	//assert(!recurseCheck(n));
 	//assert(!iterativeCheck(n));
 	return false;
@@ -170,7 +174,7 @@ bool Layout::iterativeSimpleCheck(node_t n) {
 }
 
 bool Layout::recurseCheck(node_t n, node_t i) {
-  for(; i <= M; ++i) {
+  for(; i <= GlobalStats::M; ++i) {
     layout_t l = layout_t(1) << (i - 1);
 
     if (l & nodes) {
@@ -190,7 +194,7 @@ void Layout::generateLayouts(layout_lookup& ll) {
   score.normalize();
 #endif
 
-  for ( layout_t n = 1; n <= ~(~(0UL) << M); n <<= 1) {
+  for ( layout_t n = 1; n <= layout_t(~(std::numeric_limits<layout_t>::max() << GlobalStats::M)); n <<= 1) {
    layout_t temp = nodes | n;
 
     if (temp != nodes) {
@@ -227,8 +231,10 @@ void Score::add(Score& s) {
   auto it = score.begin();
   auto o_it = s.score.begin();
 
+#ifdef COUNT
   auto c_it = count.begin();
   auto c_o_it = s.count.begin();
+#endif
 
   for (;it != score.end() && o_it != s.score.end();) {
     it->first += o_it->first;
@@ -237,9 +243,11 @@ void Score::add(Score& s) {
     ++it;
     ++o_it;
 
+#ifdef COUNT
     *c_it += *c_o_it;
     ++c_it;
     ++c_o_it;
+#endif
   }
 }
 
@@ -247,9 +255,10 @@ void Score::addMul(Score& s, score_t multiplier) {
   auto it = score.begin();
   auto o_it = s.score.begin();
 
+#ifdef COUNT
   auto c_it = count.begin();
   auto c_o_it = s.count.begin();
-
+#endif
   for (;it != score.end() && o_it != s.score.end();) {
     it->first += o_it->first * multiplier;
     it->second += o_it->second * multiplier;
@@ -257,9 +266,11 @@ void Score::addMul(Score& s, score_t multiplier) {
     ++it;
     ++o_it;
 
+#ifdef COUNT
     *c_it += *c_o_it;
     ++c_it;
     ++c_o_it;
+#endif
   }
 }
 
@@ -274,13 +285,22 @@ void Score::mul(score_t multiplier) {
 
 std::ostream& operator<<(std::ostream& os, const Score& s) {
   node_t i = 0;
+
+#ifdef COUNT
   auto c = s.count.crbegin();
-  for (auto sco = s.score.crbegin(); sco != s.score.crend(); ++sco, ++c) {
-    os << i << " " << sco->first << " " << sco->second << " " << *c << std::endl;
+#endif
+  for (auto sco = s.score.crbegin(); sco != s.score.crend(); ++sco) {
+    os << score_t(i) << " " << sco->first << " " << sco->second << " ";
+
+#ifdef COUNT
+    os << *c;
+    ++c;
+#endif
+    os << std::endl;
     ++i;
   }
 
-  os << i << " 0 1" << std::endl;
+  os << score_t(i) << " 0 1" << std::endl;
 
   return os;
 }

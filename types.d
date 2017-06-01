@@ -22,6 +22,7 @@ static if (8 >= GlobalStats.M) {
     static assert(false); // M to large
 }
 
+// XXX: make smaller if possibl?
 alias uint score_t;
 
 alias Layout[layout_t] lookup_t;
@@ -38,19 +39,12 @@ struct GlobalStats {
 const bool COUNT = true;
 
 /* === utility Functions === */
-ubyte ubyte2layout(ubyte n) {
-  ubyte t = cast(ubyte)(n - 1);
-  return  t;
-}
-
-
 layout_t node2layout(node_t n) in {
   assert(0 != n);
 } body {
   layout_t t = cast(layout_t)(1 << (n - 1));
   return  t;
 }
-
 
 /* === daya types === */
 class Layout : Score {
