@@ -3,17 +3,40 @@
 - different allocators: stdlib, tcmalloc, jemalloc
 - glibc vs. musl
 - c++ vs rust vs D
-- tune custom types based on SPIRAL_N size
+X tune custom types based on SPIRAL_N size
 - tune nauty WORDSIZE and MAXN and lib variant based on SPIRAL_N size
+
+* SCORE
+- remove total count from score, use bin. coef. to validate collection size
+- track multiples separately from uplinks
+- normalization for de-duped nodes ?
 
 * TESTS
 - liveness test
 - ancestor enumeration
 - correctness with short types
+- wtf is avx
 
 * CORRECTNESS
 - determine fudge factor for nauty de-duped layouts
 
 * OUTPUT
 - print dot format graphs
-- print maxima systems of equations	
+- print maxima systems of equations
+
+* MULTITHREAD/PERSISTENT
+- walk prospective nodes, read children, than do a single write - avoids contention for RMW of nodes, complicates enumeration in parallel, reduces liveness checks
+
+* STATE REDUCTION
+- trim score range where always dead or always alive
+
+* D
+- avoid growing score array
+- don't use .value() on aa
+
+* MAP (DE)ALLOC and SIZE OVERHEADS
+- use mmap'd array
+- use tree with custom allocation region that can be de-alloc'd in bulk
+- use hash with custom key (don't hash object, use name)
+- custom hash
+- custom "allocator" from array of Layout structs
