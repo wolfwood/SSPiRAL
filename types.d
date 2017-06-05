@@ -36,7 +36,11 @@ struct GlobalStats {
   static node_t nodesInLayout = 0;
 }
 
-const bool COUNT = true;
+version(COUNT) {
+  const bool COUNT = true;
+} else {
+  const bool COUNT = false;
+}
 
 /* === utility Functions === */
 layout_t node2layout(node_t n) in {
@@ -44,6 +48,24 @@ layout_t node2layout(node_t n) in {
 } body {
   layout_t t = cast(layout_t)(1 << (n - 1));
   return  t;
+}
+
+uint binomialCoeff(uint n, uint k) {
+  uint[] C;
+
+  import std.algorithm.comparison;
+
+  C.length = k+1;
+
+  C[0] = 1;
+
+  for (uint i = 1; i <= n; ++i) {
+    for (uint j = min(i, k); j > 0; --j) {
+      C[j] = C[j] + C[j-1];
+    }
+  }
+
+  return C[k];
 }
 
 /* === daya types === */
