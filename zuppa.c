@@ -1,6 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+// O_APPEND
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 // mmap
 #include <sys/mman.h>
 // types
@@ -9,6 +13,10 @@
 #include <string.h>
 // assert
 #include <assert.h>
+
+// unlink
+#include <unistd.h>
+
 
 #include <stdbool.h>
 
@@ -53,17 +61,49 @@ int binomialCoeff(int n, int k) {
 }
 
 struct Score* mymap(uint64_t* size) {
+#ifndef NFILEBACKED
   /*if (*size % twoMB) {
    *size = ((size/twoMB) +1) * twoMB;
    }*/
 
+  char fname[] = "/home/wolfwood/deletemeXXXXXX";
+
+  int tfd = mkstemp(fname);
+
+  if (-1 == tfd) {
+    perror("mkstemp failed: ");
+    exit(1);
+  }
+
+  off_t foo = lseek(tfd, *size, SEEK_CUR);
+
+  if (-1 == foo) {
+    perror("seek failed: ");
+    exit(1);
+  }
+
+  foo = write(tfd, " ", 1);
+
+  void* temp = mmap(NULL, *size, PROT_WRITE, MAP_NORESERVE|MAP_SHARED, tfd, 0);
+#else
   //|MAP_HUGETLB|MAP_HUGE_2MB - adjust length for mummap to page alignment
-  void* temp = mmap(NULL, *size, PROT_WRITE,  MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+  void* temp = mmap(NULL, *size, PROT_WRITE,  MAP_NORESERVE|MAP_PRIVATE|MAP_ANONYMOUS, -1, 0);
+#endif
 
   if (MAP_FAILED == temp) {
     perror("mmap failed: ");
     exit(1);
   }
+
+#ifndef NFILEBACKED
+  int err = unlink(fname);
+
+  if (-1 == err) {
+    perror("unlink failed: ");
+    exit(1);
+  }
+#endif
+
 
   return temp;
 }
