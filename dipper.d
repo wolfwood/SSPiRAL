@@ -12,6 +12,8 @@ void main() {
   for (GlobalStats.nodesInLayout = 0; GlobalStats.nodesInLayout < GlobalStats.M; ++GlobalStats.nodesInLayout) {
     lookup_t next;
 
+    assert(curr.length == binomialCoeff(GlobalStats.M, GlobalStats.nodesInLayout));
+
     version(BENCH) {
       writeln(GlobalStats.nodesInLayout);
     }
@@ -21,7 +23,7 @@ void main() {
     }
 
     version(BENCH) {
-      if(GlobalStats.nodesInLayout == 7) {
+      if(GlobalStats.nodesInLayout == 8) {
 	return;
       }
     }
