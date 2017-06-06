@@ -281,9 +281,9 @@ void IntermediateZoneWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
   next->name = name;
 
   // initialize score
-  for (int j = 0; j < (args->nodesInLayout - N); ++j) {
+  /*for (int j = 0; j < (args->nodesInLayout - N); ++j) {
     next->scores[j] = 0;
-  }
+  }*/
 
   // add each child in
   for (int i = 1; i <= args->nodesInLayout; ++i) {
@@ -295,8 +295,10 @@ void IntermediateZoneWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
   }
 
   // if there are no live children, check if alive
-  if (0 == next->scores[args->nodesInLayout - N]) {
+  if (0 == next->scores[args->nodesInLayout - N - 1] ) {
     next->scores[args->nodesInLayout - N] = checkIfAlive(name);
+  } else {
+    next->scores[args->nodesInLayout - N] = 1;
   }
 
   // normalize - wtf is this even? - overcounting but I forget why
@@ -318,9 +320,9 @@ void TerminalWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
   next->name = name;
 
   // initialize score
-  for (int j = 0; j < (((M+1)/2) - N); ++j) {
+  /*for (int j = 0; j < (((M+1)/2) - N); ++j) {
     next->scores[j] = 0;
-  }
+  }*/
 
   // add each child in
   for (int i = 1; i <= args->nodesInLayout; ++i) {
