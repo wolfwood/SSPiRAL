@@ -20,6 +20,8 @@
 
 #include <stdbool.h>
 
+#include <math.h>
+
 
 /* types */
 typedef uint8_t node_t;
@@ -29,9 +31,9 @@ typedef uint32_t score_t;   // enough bits to hold M choose M/2 ?
 
 /* vars */
 //const node_t N = 4;
-#define N (node_t)3
+#define N (node_t)5
 //const node_t M = 15;
-#define M (node_t)7
+#define M (node_t)31
 
 //const node_t SCORE_SIZE = ((M+1) / 2) - N;
 #define SCORE_SIZE (((M+1) / 2) - N)
@@ -239,17 +241,85 @@ bool isAlive(struct Score* s, uint i) {
   return s->scores[i];
 }
 
+#ifndef SLIDESEARCH
+#ifdef LIBBSEARCH
+int comp(const void *key, const void *arr) {
+  return ((struct Score*)arr)->name - *(layout_t*)key;
+}
 struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
+  return bsearch(&name, arr, len, sizeof(struct Score), &comp);
+
+}
+#else
+struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
+  assert(name != 0);
+  --len;
+
+  while (name != arr[len/2].name) {
+    if (name > arr[len/2].name) {
+      len = (len/2) - 1;
+    } else {
+      arr = &arr[(len/2)+1];
+      len -= (len/2) + 1;
+    }
+  }
+
+  return &arr[len/2];
+}
+struct Score* binSearch2(struct Score* arr, uint64_t len, const layout_t name) {
+  uint64_t l = 0, r = len -1;
+  uint64_t m = (l+r)/2;
+
+  while (name != arr[m].name) {
+    if (name > arr[m].name) {
+      r = m - 1;
+    } else {
+      l = m + 1;
+    }
+    m = (l+r)/2;
+  }
+
+  return &arr[m];
+}
+
+struct Score* binSearch3(struct Score* arr, uint64_t len, const layout_t name) {
   if (name == arr[len/2].name) {
     return &arr[len/2];
   }
 
   if (name > arr[len/2].name) {
-    return binSearch(arr, len/2, name);
+    return binSearch3(arr, (len/2) - 1, name);
   }
 
-  return binSearch(&arr[(len/2) + 1], len/2, name);
+  return binSearch3(&arr[(len/2) + 1], len - ((len/2) + 1), name);
 }
+
+struct Score* binSearch4(struct Score* arr, uint64_t len, const layout_t name) {
+  return binSearch3(arr, len - 1 , name);
+}
+#endif
+#else
+struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
+  long double w = ((long double)len - 1.0L) * (((powl(2, M) - 1.0L) - (long double) name)/(powl(2, M) -1.0L));
+  uint64_t where = (uint64_t)floorl(w);
+
+  printf("%d %Lf %lu %lu\n", name, (powl(2, M) - 1), len, where);
+
+  if (name == arr[where].name) {
+    return &arr[where];
+  }
+
+  while (name > arr[where].name) {
+    --where;
+  }
+
+  while (name < arr[where].name) {
+    ++where;
+  }
+
+  return &arr[where];
+}
+#endif
 
 struct FirstBlushArgs {
   struct Score *curr;
@@ -385,7 +455,7 @@ int main(int argc, char** argv) {
     curr_size = next_size;
 
 #ifdef BENCH
-    if (8 == i) {
+    if (BENCH == i) {
       break;
     }
 #endif
