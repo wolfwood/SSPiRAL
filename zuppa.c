@@ -394,12 +394,12 @@ int main(int argc, char** argv) {
   walkOrdered(N, &FirstBlushWork, (void*)&arg);
 
   node_t i;
-  for (i = N+1; i <= ((M+1)/2); ++i) {
+  for (i = N+1; i <= ((M)/2); ++i) {
     // set up next
     next_size = binomialCoeff(M, i) * sizeof(struct Score);
     next = mymap(&next_size);
 
-    printf("%d\n", i);
+    printf("-%d\n", i);
 
     // do the work
     struct IntermediateZoneArgs argz;
@@ -428,6 +428,8 @@ int main(int argc, char** argv) {
     // set up next
     next_size = binomialCoeff(M, i) * sizeof(struct Score);
     next = mymap(&next_size);
+
+    printf("%d\n", i);
 
     // do the work
     struct IntermediateZoneArgs argz;
