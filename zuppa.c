@@ -9,6 +9,7 @@
 #include <sys/mman.h>
 // types
 #include <stdint.h>
+#include <stdbool.h>
 // memset
 #include <string.h>
 // assert
@@ -16,11 +17,6 @@
 
 // unlink
 #include <unistd.h>
-
-
-#include <stdbool.h>
-
-#include <math.h>
 
 
 /* types */
@@ -39,6 +35,7 @@ typedef uint32_t score_t;   // enough bits to hold M choose M/2 ?
 #define SCORE_SIZE (((M+1) / 2) - N)
 
 #define twoMB (2*1024*1024)
+
 
 /* util */
 node_t MfromN(node_t n) { return ((node_t)1 << n) - 1;}
@@ -77,6 +74,13 @@ struct Score* mymap(uint64_t* size) {
     exit(1);
   }
 
+  int err = unlink(fname);
+
+  if (-1 == err) {
+    perror("unlink failed: ");
+    exit(1);
+  }
+
   off_t foo = lseek(tfd, *size, SEEK_CUR);
 
   if (-1 == foo) {
@@ -96,16 +100,6 @@ struct Score* mymap(uint64_t* size) {
     perror("mmap failed: ");
     exit(1);
   }
-
-#ifndef NFILEBACKED
-  int err = unlink(fname);
-
-  if (-1 == err) {
-    perror("unlink failed: ");
-    exit(1);
-  }
-#endif
-
 
   return temp;
 }
@@ -231,6 +225,7 @@ void walkOrdered(const uint limit, void(*func)(layout_t name, uint limit, layout
   }
 }
 
+
 /* core structure */
 struct Score {
   layout_t name;
@@ -241,7 +236,6 @@ bool isAlive(struct Score* s, uint i) {
   return s->scores[i];
 }
 
-#ifndef SLIDESEARCH
 #ifdef LIBBSEARCH
 int comp(const void *key, const void *arr) {
   return ((struct Score*)arr)->name - *(layout_t*)key;
@@ -298,28 +292,6 @@ struct Score* binSearch4(struct Score* arr, uint64_t len, const layout_t name) {
   return binSearch3(arr, len - 1 , name);
 }
 #endif
-#else
-struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
-  long double w = ((long double)len - 1.0L) * (((powl(2, M) - 1.0L) - (long double) name)/(powl(2, M) -1.0L));
-  uint64_t where = (uint64_t)floorl(w);
-
-  printf("%d %Lf %lu %lu\n", name, (powl(2, M) - 1), len, where);
-
-  if (name == arr[where].name) {
-    return &arr[where];
-  }
-
-  while (name > arr[where].name) {
-    --where;
-  }
-
-  while (name < arr[where].name) {
-    ++where;
-  }
-
-  return &arr[where];
-}
-#endif
 
 struct FirstBlushArgs {
   struct Score *curr;
@@ -349,11 +321,6 @@ void IntermediateZoneWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
   // convenient alias
   struct Score *next = &args->next[args->pos];
   next->name = name;
-
-  // initialize score
-  /*for (int j = 0; j < (args->nodesInLayout - N); ++j) {
-    next->scores[j] = 0;
-  }*/
 
   // add each child in
   for (int i = 1; i <= args->nodesInLayout; ++i) {
@@ -389,11 +356,6 @@ void TerminalWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
   struct Score *next = &args->next[args->pos];
   next->name = name;
 
-  // initialize score
-  /*for (int j = 0; j < (((M+1)/2) - N); ++j) {
-    next->scores[j] = 0;
-  }*/
-
   // add each child in
   for (int i = 1; i <= args->nodesInLayout; ++i) {
     struct Score *temp = binSearch(args->curr, args->layoutsInCurr, name ^ Is[i]);
@@ -415,8 +377,6 @@ void TerminalWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
 
 
 int main(int argc, char** argv) {
-  //node_t nodesInLayout = N;
-
   struct Score *curr, *next;
 
   printf("%d of %d\n", N, M);
