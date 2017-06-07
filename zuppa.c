@@ -362,7 +362,7 @@ void TerminalWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
   for (int i = 1; i <= args->nodesInLayout; ++i) {
     struct Score *temp = binSearch(args->curr, args->layoutsInCurr, name ^ Is[i]);
 
-    for (int j = 0; j < (((M+1)/2) - N); ++j) {
+    for (int j = 0; j < SCORE_SIZE; ++j) {
       next->scores[j] += temp->scores[j];
     }
   }
@@ -454,8 +454,8 @@ int main(int argc, char** argv) {
     printf("%d %d %d\n", j, binomialCoeff(M, j), binomialCoeff(M, j));
   }
 
-  for (int j = ((M/2) - N); j >= 0; --j) {
-    printf("%d %d %d\n", (M/2) + N - j, curr[0].scores[j], binomialCoeff(M, (M/2) + N - j));
+  for (int j = SCORE_SIZE - 1; j >= 0; --j) {
+    printf("%d %d %d\n", (M/2) + SCORE_SIZE - j, curr[0].scores[j], binomialCoeff(M, (M/2) + SCORE_SIZE - j));
   }
 
   for (int j = M - N + 1; j <= M; ++j) {
