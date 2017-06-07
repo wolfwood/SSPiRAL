@@ -245,6 +245,7 @@ struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
 
 }
 #else
+// replace l with array pointer arithmetic
 struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
   assert(name != 0);
   --len;
@@ -260,6 +261,8 @@ struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
 
   return &arr[len/2];
 }
+
+// traditional formulation
 struct Score* binSearch2(struct Score* arr, uint64_t len, const layout_t name) {
   uint64_t l = 0, r = len -1;
   uint64_t m = (l+r)/2;
@@ -276,20 +279,19 @@ struct Score* binSearch2(struct Score* arr, uint64_t len, const layout_t name) {
   return &arr[m];
 }
 
+// recursive
 struct Score* binSearch3(struct Score* arr, uint64_t len, const layout_t name) {
+  --len;
+
   if (name == arr[len/2].name) {
     return &arr[len/2];
   }
 
   if (name > arr[len/2].name) {
-    return binSearch3(arr, (len/2) - 1, name);
+    return binSearch3(arr, (len/2), name);
   }
 
-  return binSearch3(&arr[(len/2) + 1], len - ((len/2) + 1), name);
-}
-
-struct Score* binSearch4(struct Score* arr, uint64_t len, const layout_t name) {
-  return binSearch3(arr, len - 1 , name);
+  return binSearch3(&arr[(len/2) + 1], len - (len/2), name);
 }
 #endif
 
