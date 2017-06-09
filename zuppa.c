@@ -43,7 +43,47 @@ layout_t node2layout(node_t n) {
   return ((layout_t)1) << (n - 1);
 }
 
+static int* coeffs[M+1];
+
+void initCoeffs(){
+  coeffs[0] = malloc(sizeof(int));
+
+  coeffs[0][0] = 1;
+
+  for (int i = 1; i <=M; ++i) {
+    int limit = i + 1;
+    coeffs[i] = calloc(limit, sizeof(int));
+
+    coeffs[i][0] = 1;
+    coeffs[i][limit -1] = 1;
+
+    for (int j = 1; j < limit - 1; ++j) {
+      coeffs[i][j] = coeffs[i-1][j] + coeffs[i-1][j-1];
+    }
+  }
+}
+
 int binomialCoeff(int n, int k) {
+  if ( n < k) {
+    return 0;
+  }
+
+  //if ( n - k < k) {
+  //  k = n - k;
+  //}
+
+  return coeffs[n][k];
+}
+
+int binomialCoeff2(int n, int k) {
+  if ( n < k) {
+    return 0;
+  }
+
+  if ( n - k < k) {
+    k = n - k;
+  }
+
   int C[k+1];
   memset(C, 0, sizeof(C));
 
@@ -57,6 +97,28 @@ int binomialCoeff(int n, int k) {
     }
   }
   return C[k];
+}
+
+// Returns value of Binomial Coefficient C(n, k)
+uint binomialCoeff3(uint64_t n, uint64_t k) {
+  if ( n < k) {
+    return 0;
+  }
+
+  int res = 1;
+
+    // Since C(n, k) = C(n, n-k)
+    if ( k > n - k ) {
+        k = n - k;
+    }
+
+    // Calculate value of [n * (n-1) *---* (n-k+1)] / [k * (k-1) *----* 1]
+    for (uint64_t i = 0; i < k; ++i) {
+        res *= (n - i);
+        res /= (i + 1);
+    }
+
+    return res;
 }
 
 struct Score* mymap(uint64_t* size) {
@@ -327,6 +389,7 @@ void IntermediateZoneWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
   // add each child in
   for (int i = 1; i <= args->nodesInLayout; ++i) {
     struct Score *temp = binSearch(args->curr, args->layoutsInCurr, name ^ Is[i]);
+    assert(temp->name == (name ^ Is[i]));
 
     for (int j = 0; j < (args->nodesInLayout - N); ++j) {
       next->scores[j] += temp->scores[j];
@@ -380,6 +443,8 @@ void TerminalWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
 
 int main(int argc, char** argv) {
   struct Score *curr, *next;
+
+  initCoeffs();
 
   printf("%d of %d\n", N, M);
 
