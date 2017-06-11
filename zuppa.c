@@ -75,52 +75,6 @@ int binomialCoeff(int n, int k) {
   return coeffs[n][k];
 }
 
-int binomialCoeff2(int n, int k) {
-  if ( n < k) {
-    return 0;
-  }
-
-  if ( n - k < k) {
-    k = n - k;
-  }
-
-  int C[k+1];
-  memset(C, 0, sizeof(C));
-
-  C[0] = 1;  // nC0 is 1
-
-  for (int i = 1; i <= n; i++) {
-    // Compute next row of pascal triangle using
-    // the previous row
-    for (int j = i < k ? i : k; j > 0; j--) {
-      C[j] = C[j] + C[j-1];
-    }
-  }
-  return C[k];
-}
-
-// Returns value of Binomial Coefficient C(n, k)
-uint binomialCoeff3(uint64_t n, uint64_t k) {
-  if ( n < k) {
-    return 0;
-  }
-
-  int res = 1;
-
-    // Since C(n, k) = C(n, n-k)
-    if ( k > n - k ) {
-        k = n - k;
-    }
-
-    // Calculate value of [n * (n-1) *---* (n-k+1)] / [k * (k-1) *----* 1]
-    for (uint64_t i = 0; i < k; ++i) {
-        res *= (n - i);
-        res /= (i + 1);
-    }
-
-    return res;
-}
-
 struct Score* mymap(uint64_t* size) {
 #ifndef NFILEBACKED
   /*if (*size % twoMB) {
@@ -195,7 +149,6 @@ bool checkIfAlive(layout_t name) {
     layout_t l = node2layout(n);
 
     if ((l & name) == 0) {
-      //if (!iterativeSimpleCheck(n)) {
       if (!recurseCheck(name, n, 1)) {
 	return false;
       }
@@ -204,80 +157,76 @@ bool checkIfAlive(layout_t name) {
   return true;
 }
 
-void printLayouts(layout_t name, uint limit, layout_t *Is, void *arg){
-  printf("%u -", name);
-  for (int j = 1; j <= N; ++j) {
-    printf(" %u", Is[j]);
-  }
-  printf("\n");
-}
-
-void printNames(layout_t name, uint limit, layout_t *Is, void *arg){
-  printf("%u\n", name);
-}
-
-void walk(const uint limit, void(*func)(layout_t name, uint limit, layout_t *Is, void* arg), void* arg) {
+void walkOrdered2(const uint limit, void(*func)(layout_t name, uint limit, node_t *Is, void* arg), void* arg) {
   uint i = 1;
-  layout_t Is[limit+1], name = 0;
-
-  for (uint i = 0; i <= limit; ++i) {
-      Is[i] = 0;
-  }
-
-
-  while (0 < i) {
-    if(0 == Is[i]) {
-      Is[i] = Is[i-1] + 1;
-    } else {
-      name ^= node2layout(Is[i]);
-      ++Is[i];
-    }
-
-    name |= node2layout(Is[i]);
-
-    if (limit == i) {
-      (*func)(name, limit, Is, arg);
-    }
-
-    if(M == Is[i]) {
-      name ^= node2layout(Is[i]);
-      Is[i] = 0;
-      --i;
-    } else if (limit > i) {
-      ++i;
-    }
-  }
-}
-
-void walkOrdered(const uint limit, void(*func)(layout_t name, uint limit, layout_t *Is, void* arg), void* arg) {
-  uint i = 1;
-  layout_t Is[limit+1], name = 0;
+  layout_t ells[limit+1], name = 0;
+  node_t Is[limit+1];
 
   for (uint i = 1; i <= limit; ++i) {
-      Is[i] = 0;
+    ells[i] = 0;
   }
 
-  Is[0] = node2layout(M) << 1;
+  ells[0] = node2layout(M) << 1;
+  Is[0] = M;
 
   while (0 < i) {
-
-    if(0 == Is[i]) {
+    if(0 == ells[i]) {
+      ells[i] = ells[i-1];
       Is[i] = Is[i-1];
     } else {
-      name ^= Is[i];
+      name ^= ells[i];
     }
-    Is[i] >>= 1;
+    ells[i] >>= 1;
+    --Is[i];
 
-
-    name |= Is[i];
+    name |= ells[i];
 
     if (limit == i) {
       (*func)(name, limit, Is, arg);
     }
 
-    if(1 == Is[i]) {
-      name ^= Is[i];
-      Is[i] = 0;
+    if(1 == ells[i]) {
+      name ^= ells[i];
+      ells[i] = 0;
+      --i;
+    } else {
+      if (limit > i) {
+	++i;
+      }
+    }
+  }
+}
+
+void walkOrdered(const uint limit, void(*func)(layout_t name, uint limit, node_t *Is, void* arg), void* arg) {
+  uint i = 1;
+  layout_t name = 0;
+  node_t Is[limit+1];
+  const node_t SENTINEL = 255;
+
+  for (uint i = 1; i <= limit; ++i) {
+    Is[i] = SENTINEL;
+  }
+
+  // one greater than the highest acceptable value - gets fed into the next element
+  Is[0] = M;
+
+  while (0 < i) {
+    if(SENTINEL == Is[i]) {
+      Is[i] = Is[i-1];
+    } else {
+      name ^= (layout_t)1 << Is[i];
+    }
+    --Is[i];
+
+    name |= (layout_t)1 << Is[i];
+
+    if (limit == i) {
+      (*func)(name, limit, Is, arg);
+    }
+
+    if(0 == Is[i]) {
+      name ^= (layout_t)1 << Is[i];
+      Is[i] = SENTINEL;
       --i;
     } else {
       if (limit > i) {
@@ -294,129 +243,31 @@ struct Score {
   score_t scores[SCORE_SIZE];
 };
 
-bool isAlive(struct Score* s, uint i) {
-  return s->scores[i];
-}
-#ifdef DIRECT
-uint lg2(uint v) {
-  static const unsigned int b[] = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0,
-				   0xFF00FF00, 0xFFFF0000};
-  register unsigned int r = (v & b[0]) != 0;
-  for (uint i = 4; i > 0; i--) { // unroll for speed...
-    r |= ((v & b[i]) != 0) << i;
-  }
-  return r;
-}
-
-uint directLookup(const layout_t *Is, int len, const int oddManOut) {
+uint directLookup(const node_t *Is, int len, const int oddManOut) {
   uint idx = 0;
 
   // Is[] is 1 indexed
-  /*for ( int i = 1; i <= len; ++i) {
-
-    if (oddManOut != i) {
-      // the node name is this value + 1 but both lg2() and conbinadic numbers treat our first element as 0
-      uint n = lg2(Is[i]);
-      // whereas combinadics start position "base" at 1
-      uint k = len - i + 1;
-
-      uint bk =  binomialCoeff(n, k);
-
-      printf("i: %d Is[i]: %d lg2(Is[i]): %d k: %d bk: %d\n", i , Is[i], n, k, bk);
-
-      idx += bk;
-    }
-    }*/
-
-  // Is[] is 1 indexed
   for (int i = 1; i < oddManOut; ++i) {
-    idx += binomialCoeff(lg2(Is[i]), len - i);
+    idx += binomialCoeff(Is[i], len - i);
   }
 
   for (int i = oddManOut + 1; i <= len; ++i) {
-    idx += binomialCoeff(lg2(Is[i]), len - i + 1);
+    idx += binomialCoeff(Is[i], len - i + 1);
   }
-
-  //printf("idx: %d\n", idx);
 
   return idx;
 }
-
-#else
-#ifdef LIBBSEARCH
-int comp(const void *key, const void *arr) {
-  return ((struct Score*)arr)->name - *(layout_t*)key;
-}
-struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
-  return bsearch(&name, arr, len, sizeof(struct Score), &comp);
-
-}
-#else
-// replace l with array pointer arithmetic
-struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
-  assert(name != 0);
-  --len;
-
-  while (name != arr[len/2].name) {
-    if (name > arr[len/2].name) {
-      len = (len/2) - 1;
-    } else {
-      arr = &arr[(len/2)+1];
-      len -= (len/2) + 1;
-    }
-  }
-
-  return &arr[len/2];
-}
-
-// traditional formulation
-struct Score* binSearch2(struct Score* arr, uint64_t len, const layout_t name) {
-  uint64_t l = 0, r = len -1;
-  uint64_t m = (l+r)/2;
-
-  while (name != arr[m].name) {
-    if (name > arr[m].name) {
-      r = m - 1;
-    } else {
-      l = m + 1;
-    }
-    m = (l+r)/2;
-  }
-
-  return &arr[m];
-}
-
-// recursive
-struct Score* binSearch3(struct Score* arr, uint64_t len, const layout_t name) {
-  --len;
-
-  if (name == arr[len/2].name) {
-    return &arr[len/2];
-  }
-
-  if (name > arr[len/2].name) {
-    return binSearch3(arr, (len/2), name);
-  }
-
-  return binSearch3(&arr[(len/2) + 1], len - (len/2), name);
-}
-#endif
-#endif
 
 struct FirstBlushArgs {
   struct Score *curr;
   layout_t pos;
 };
 
-void FirstBlushWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
+void FirstBlushWork(layout_t name, uint limit, node_t *Is, void* _arg) {
   struct FirstBlushArgs *args = _arg;
 
   args->curr[args->pos].name = name;
   args->curr[args->pos].scores[0] = checkIfAlive(name);
-
-#ifdef DIRECT
-  //assert(args->curr[args->layoutsInCurr - 1 - directLookup(Is, N, 0)].name == name);
-#endif
 
   ++(args->pos);
 }
@@ -429,7 +280,7 @@ struct IntermediateZoneArgs {
   uint64_t layoutsInCurr;
 };
 
-void IntermediateZoneWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
+void IntermediateZoneWork(layout_t name, uint limit, node_t *Is, void* _arg) {
   struct IntermediateZoneArgs *args = _arg;
 
   // convenient alias
@@ -438,13 +289,8 @@ void IntermediateZoneWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
 
   // add each child in
   for (int i = 1; i <= args->nodesInLayout; ++i) {
-#ifdef DIRECT
     struct Score *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, args->nodesInLayout, i)];
-    assert(temp->name == (name ^ Is[i]));
-#else
-    struct Score *temp = binSearch(args->curr, args->layoutsInCurr, name ^ Is[i]);
-    assert(temp->name == (name ^ Is[i]));
-#endif
+    assert(temp->name == (name ^ ((layout_t)1 << Is[i])));
 
     for (int j = 0; j < (args->nodesInLayout - N); ++j) {
       next->scores[j] += temp->scores[j];
@@ -469,7 +315,7 @@ void IntermediateZoneWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
   ++(args->pos);
 }
 
-void TerminalWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
+void TerminalWork(layout_t name, uint limit, node_t *Is, void* _arg) {
   struct IntermediateZoneArgs *args = _arg;
 
   // convenient alias
@@ -478,13 +324,8 @@ void TerminalWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
 
   // add each child in
   for (int i = 1; i <= args->nodesInLayout; ++i) {
-#ifdef DIRECT
     struct Score *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, args->nodesInLayout, i)];
-    assert(temp->name == (name ^ Is[i]));
-#else
-    struct Score *temp = binSearch(args->curr, args->layoutsInCurr, name ^ Is[i]);
-    assert(temp->name == (name ^ Is[i]));
-#endif
+    assert(temp->name == (name ^ ((layout_t)1 << Is[i])));
 
     for (int j = 0; j < SCORE_SIZE; ++j) {
       next->scores[j] += temp->scores[j];
