@@ -297,7 +297,52 @@ struct Score {
 bool isAlive(struct Score* s, uint i) {
   return s->scores[i];
 }
+#ifdef DIRECT
+uint lg2(uint v) {
+  static const unsigned int b[] = {0xAAAAAAAA, 0xCCCCCCCC, 0xF0F0F0F0,
+				   0xFF00FF00, 0xFFFF0000};
+  register unsigned int r = (v & b[0]) != 0;
+  for (uint i = 4; i > 0; i--) { // unroll for speed...
+    r |= ((v & b[i]) != 0) << i;
+  }
+  return r;
+}
 
+uint directLookup(const layout_t *Is, int len, const int oddManOut) {
+  uint idx = 0;
+
+  // Is[] is 1 indexed
+  /*for ( int i = 1; i <= len; ++i) {
+
+    if (oddManOut != i) {
+      // the node name is this value + 1 but both lg2() and conbinadic numbers treat our first element as 0
+      uint n = lg2(Is[i]);
+      // whereas combinadics start position "base" at 1
+      uint k = len - i + 1;
+
+      uint bk =  binomialCoeff(n, k);
+
+      printf("i: %d Is[i]: %d lg2(Is[i]): %d k: %d bk: %d\n", i , Is[i], n, k, bk);
+
+      idx += bk;
+    }
+    }*/
+
+  // Is[] is 1 indexed
+  for (int i = 1; i < oddManOut; ++i) {
+    idx += binomialCoeff(lg2(Is[i]), len - i);
+  }
+
+  for (int i = oddManOut + 1; i <= len; ++i) {
+    idx += binomialCoeff(lg2(Is[i]), len - i + 1);
+  }
+
+  //printf("idx: %d\n", idx);
+
+  return idx;
+}
+
+#else
 #ifdef LIBBSEARCH
 int comp(const void *key, const void *arr) {
   return ((struct Score*)arr)->name - *(layout_t*)key;
@@ -356,6 +401,7 @@ struct Score* binSearch3(struct Score* arr, uint64_t len, const layout_t name) {
   return binSearch3(&arr[(len/2) + 1], len - (len/2), name);
 }
 #endif
+#endif
 
 struct FirstBlushArgs {
   struct Score *curr;
@@ -367,6 +413,10 @@ void FirstBlushWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
 
   args->curr[args->pos].name = name;
   args->curr[args->pos].scores[0] = checkIfAlive(name);
+
+#ifdef DIRECT
+  //assert(args->curr[args->layoutsInCurr - 1 - directLookup(Is, N, 0)].name == name);
+#endif
 
   ++(args->pos);
 }
@@ -388,8 +438,13 @@ void IntermediateZoneWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
 
   // add each child in
   for (int i = 1; i <= args->nodesInLayout; ++i) {
+#ifdef DIRECT
+    struct Score *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, args->nodesInLayout, i)];
+    assert(temp->name == (name ^ Is[i]));
+#else
     struct Score *temp = binSearch(args->curr, args->layoutsInCurr, name ^ Is[i]);
     assert(temp->name == (name ^ Is[i]));
+#endif
 
     for (int j = 0; j < (args->nodesInLayout - N); ++j) {
       next->scores[j] += temp->scores[j];
@@ -423,7 +478,13 @@ void TerminalWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
 
   // add each child in
   for (int i = 1; i <= args->nodesInLayout; ++i) {
+#ifdef DIRECT
+    struct Score *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, args->nodesInLayout, i)];
+    assert(temp->name == (name ^ Is[i]));
+#else
     struct Score *temp = binSearch(args->curr, args->layoutsInCurr, name ^ Is[i]);
+    assert(temp->name == (name ^ Is[i]));
+#endif
 
     for (int j = 0; j < SCORE_SIZE; ++j) {
       next->scores[j] += temp->scores[j];
