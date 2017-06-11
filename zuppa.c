@@ -300,7 +300,7 @@ bool isAlive(struct Score* s, uint i) {
 
 #ifdef LIBBSEARCH
 int comp(const void *key, const void *arr) {
-  return ((struct Score*)arr)->name - *(layout_t*)key;
+  return *(layout_t*)key - ((struct Score*)arr)->name;
 }
 struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
   return bsearch(&name, arr, len, sizeof(struct Score), &comp);
@@ -313,7 +313,7 @@ struct Score* binSearch(struct Score* arr, uint64_t len, const layout_t name) {
   --len;
 
   while (name != arr[len/2].name) {
-    if (name > arr[len/2].name) {
+    if (name < arr[len/2].name) {
       len = (len/2) - 1;
     } else {
       arr = &arr[(len/2)+1];
@@ -330,7 +330,7 @@ struct Score* binSearch2(struct Score* arr, uint64_t len, const layout_t name) {
   uint64_t m = (l+r)/2;
 
   while (name != arr[m].name) {
-    if (name > arr[m].name) {
+    if (name < arr[m].name) {
       r = m - 1;
     } else {
       l = m + 1;
@@ -349,7 +349,7 @@ struct Score* binSearch3(struct Score* arr, uint64_t len, const layout_t name) {
     return &arr[len/2];
   }
 
-  if (name > arr[len/2].name) {
+  if (name < arr[len/2].name) {
     return binSearch3(arr, (len/2), name);
   }
 
@@ -368,7 +368,7 @@ void FirstBlushWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
   args->curr[args->pos].name = name;
   args->curr[args->pos].scores[0] = checkIfAlive(name);
 
-  ++(args->pos);
+  --(args->pos);
 }
 
 struct IntermediateZoneArgs {
@@ -411,7 +411,7 @@ void IntermediateZoneWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
   }
 #endif
 
-  ++(args->pos);
+  --(args->pos);
 }
 
 void TerminalWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
@@ -437,7 +437,7 @@ void TerminalWork(layout_t name, uint limit, layout_t *Is, void* _arg) {
     next->scores[((M/2) - N) - j -1] /= j;
   }
 #endif
-  ++(args->pos);
+  --(args->pos);
 }
 
 
@@ -454,7 +454,7 @@ int main(int argc, char** argv) {
   /* populate first scores array, test liveness for all layouts */
   struct FirstBlushArgs arg;
   arg.curr = curr;
-  arg.pos = 0;
+  arg.pos = (curr_size / sizeof(struct Score)) - 1;
 
   walkOrdered(N, &FirstBlushWork, (void*)&arg);
 
@@ -470,9 +470,9 @@ int main(int argc, char** argv) {
     struct IntermediateZoneArgs argz;
     argz.curr = curr;
     argz.next = next;
-    argz.pos = 0;
     argz.nodesInLayout = i;
     argz.layoutsInCurr = curr_size / sizeof(struct Score);
+    argz.pos = (next_size / sizeof(struct Score)) - 1;
 
     walkOrdered(i, &IntermediateZoneWork, (void*)&argz);
 
@@ -500,9 +500,9 @@ int main(int argc, char** argv) {
     struct IntermediateZoneArgs argz;
     argz.curr = curr;
     argz.next = next;
-    argz.pos = 0;
     argz.nodesInLayout = i;
     argz.layoutsInCurr = curr_size / sizeof(struct Score);
+    argz.pos = (next_size / sizeof(struct Score)) - 1;
 
     walkOrdered(i, &TerminalWork, (void*)&argz);
 
@@ -520,7 +520,7 @@ int main(int argc, char** argv) {
   }
 
   for (int j = SCORE_SIZE - 1; j >= 0; --j) {
-    printf("%d %d %d\n", (M/2) + SCORE_SIZE - j, curr[0].scores[j], binomialCoeff(M, (M/2) + SCORE_SIZE - j));
+    printf("%d %d %d\n", (M/2) + SCORE_SIZE - j, curr[(curr_size/sizeof(struct Score))-1].scores[j], binomialCoeff(M, (M/2) + SCORE_SIZE - j));
   }
 
   for (int j = M - N + 1; j <= M; ++j) {
