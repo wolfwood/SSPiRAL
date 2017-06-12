@@ -306,9 +306,9 @@ void IntermediateZoneWork(layout_t name, uint limit, node_t *Is, void* _arg) {
 
   // normalize - wtf is this even? - overcounting but I forget why
 #ifdef NORMALIZE
-  for (int j = 1; j < (args->nodesInLayout - N); ++j) {
-    assert(0 == next->scores[(args->nodesInLayout - N) - j -1] % j);
-    next->scores[(args->nodesInLayout - N) - j -1] /= j;
+  for (int j = 1; j <= (args->nodesInLayout - N); ++j) {
+    assert(0 == next->scores[(args->nodesInLayout - N) - j] % j);
+    next->scores[(args->nodesInLayout - N) - j] /= j;
   }
 #endif
 
@@ -334,9 +334,10 @@ void TerminalWork(layout_t name, uint limit, node_t *Is, void* _arg) {
 
   // normalize - wtf is this even? - overcounting but I forget why
 #ifdef NORMALIZE
-  for (int j = 1; j < ((M/2) - N); ++j) {
-    assert(0 == next->scores[((M/2) - N) - j -1] % j);
-    next->scores[((M/2) - N) - j -1] /= j;
+  for (int j = 0; j < SCORE_SIZE; ++j) {
+    uint adjustment = args->nodesInLayout - (M/2);
+    assert(0 == next->scores[SCORE_SIZE - j - 1] % (j + adjustment));
+    next->scores[SCORE_SIZE - j - 1] /= (j + adjustment);
   }
 #endif
   ++(args->pos);
@@ -361,7 +362,7 @@ int main(int argc, char** argv) {
   walkOrdered(N, &FirstBlushWork, (void*)&arg);
 
   node_t i;
-  for (i = N+1; i <= ((M)/2); ++i) {
+  for (i = N+1; i <= (M/2); ++i) {
     // set up next
     next_size = binomialCoeff(M, i) * sizeof(struct Score);
     next = mymap(&next_size);
@@ -422,7 +423,7 @@ int main(int argc, char** argv) {
   }
 
   for (int j = SCORE_SIZE - 1; j >= 0; --j) {
-    printf("%d %d %d\n", (M/2) + SCORE_SIZE - j, curr[0].scores[j], binomialCoeff(M, (M/2) + SCORE_SIZE - j));
+    printf("%d %u %d\n", (M/2) + SCORE_SIZE - j, curr[0].scores[j], binomialCoeff(M, (M/2) + SCORE_SIZE - j));
   }
 
   for (int j = M - N + 1; j <= M; ++j) {
