@@ -64,9 +64,9 @@ void initCoeffs(){
 }
 
 int binomialCoeff(int n, int k) {
-  /*if ( n < k) {
+  if ( n < k) {
     return 0;
-    }*/
+  }
 
   //if ( n - k < k) {
   //  k = n - k;
@@ -252,11 +252,7 @@ uint directLookup(const node_t *Is, int len, const int oddManOut) {
   }
 
   for (int i = oddManOut + 1; i <= len; ++i) {
-    uint n = Is[i];
-    uint k = len - i + 1;
-    if ( n >= k) {
-      idx += binomialCoeff(n, k);
-    }
+    idx += binomialCoeff(Is[i], len - i + 1);
   }
 
   return idx;
