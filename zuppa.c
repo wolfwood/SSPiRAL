@@ -278,6 +278,10 @@ struct IntermediateZoneArgs {
   layout_t pos;
   node_t nodesInLayout;
   uint64_t layoutsInCurr;
+#ifdef VERIFY
+  score_t dethklok;
+#endif
+
 };
 
 void IntermediateZoneWork(layout_t name, uint limit, node_t *Is, void* _arg) {
@@ -300,6 +304,11 @@ void IntermediateZoneWork(layout_t name, uint limit, node_t *Is, void* _arg) {
   // if there are no live children, check if alive
   if (0 == next->scores[args->nodesInLayout - N - 1] ) {
     next->scores[args->nodesInLayout - N] = checkIfAlive(name);
+#ifdef VERIFY
+    if (0 == next->scores[args->nodesInLayout - N]) {
+      ++args->dethklok;
+    }
+#endif
   } else {
     next->scores[args->nodesInLayout - N] = 1;
   }
@@ -376,10 +385,19 @@ int main(int argc, char** argv) {
     argz.pos = 0;
     argz.nodesInLayout = i;
     argz.layoutsInCurr = curr_size / sizeof(struct Score);
+#ifdef VERIFY
+    argz.dethklok = 0;
+#endif
 
     walkOrdered(i, &IntermediateZoneWork, (void*)&argz);
 
-    // rotate arrays
+    assert((next_size / sizeof(struct Score)) == argz.pos);
+#ifdef VERIFY
+    if ((M/2) == i) {
+      assert(M == argz.dethklok);
+    }
+#endif
+      // rotate arrays
     myunmap(curr, curr_size);
     curr = next;
     curr_size = next_size;
@@ -408,6 +426,8 @@ int main(int argc, char** argv) {
     argz.layoutsInCurr = curr_size / sizeof(struct Score);
 
     walkOrdered(i, &TerminalWork, (void*)&argz);
+
+    assert((next_size / sizeof(struct Score)) == argz.pos);
 
     // rotate arrays
     myunmap(curr, curr_size);
