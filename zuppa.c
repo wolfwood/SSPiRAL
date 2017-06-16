@@ -267,7 +267,7 @@ void FirstBlushWork(layout_t name, uint limit, node_t *Is, void* _arg) {
   struct FirstBlushArgs *args = _arg;
 
   args->curr[args->pos].name = name;
-  args->curr[args->pos].scores[0] = checkIfAlive(name);
+  args->curr[args->pos].scores[0] = !checkIfAlive(name);
 
   ++(args->pos);
 }
@@ -302,20 +302,20 @@ void IntermediateZoneWork(layout_t name, uint limit, node_t *Is, void* _arg) {
   }
 
   // if there are no live children, check if alive
-  if (0 == next->scores[args->nodesInLayout - N - 1] ) {
-    next->scores[args->nodesInLayout - N] = checkIfAlive(name);
+  if (args->nodesInLayout == next->scores[args->nodesInLayout - N - 1] ) {
+    next->scores[args->nodesInLayout - N] = !checkIfAlive(name);
 #ifdef VERIFY
-    if (0 == next->scores[args->nodesInLayout - N]) {
+    if (1 == next->scores[args->nodesInLayout - N]) {
       ++args->dethklok;
     }
 #endif
   } else {
-    next->scores[args->nodesInLayout - N] = 1;
+    next->scores[args->nodesInLayout - N] = 0;
   }
 
   // normalize - wtf is this even? - overcounting but I forget why
 #ifdef NORMALIZE
-  for (int j = 1; j <= (args->nodesInLayout - N); ++j) {
+  for (int j = 2; j <= (args->nodesInLayout - N); ++j) {
     assert(0 == next->scores[(args->nodesInLayout - N) - j] % j);
     next->scores[(args->nodesInLayout - N) - j] /= j;
   }
@@ -439,14 +439,16 @@ int main(int argc, char** argv) {
 #endif
 
   for (int j = 0; j < ((M+1)/2); ++j) {
-    printf("%d %d %d\n", j, binomialCoeff(M, j), binomialCoeff(M, j));
+    uint64_t total = binomialCoeff(M, j);
+    printf("%d %lu %lu\n", j, total, total);
   }
 
   for (int j = SCORE_SIZE - 1; j >= 0; --j) {
-    printf("%d %u %d\n", (M/2) + SCORE_SIZE - j, curr[0].scores[j], binomialCoeff(M, (M/2) + SCORE_SIZE - j));
+    uint64_t total = binomialCoeff(M, (M/2) + SCORE_SIZE - j);
+    printf("%d %lu %lu\n", (M/2) + SCORE_SIZE - j, total - curr[0].scores[j], total);
   }
 
   for (int j = M - N + 1; j <= M; ++j) {
-    printf("%d %d %d\n", j, 0, binomialCoeff(M, j));
+    printf("%d %u %u\n", j, 0, binomialCoeff(M, j));
   }
 }
