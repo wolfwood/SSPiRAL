@@ -294,6 +294,37 @@ void walkOrdered(const uint limit, void(*func)(layout_t name, uint limit, node_t
   }
 }
 
+void walkOrderedNameless(const uint limit, void(*func)(uint limit, node_t *Is, void* arg), void* arg) {
+  uint i = 1;
+  node_t Is[limit+1];
+  const node_t SENTINEL = 0;
+
+  for (uint i = 1; i <= limit; ++i) {
+    Is[i] = SENTINEL;
+  }
+
+  // one greater than the highest acceptable value - gets fed into the next element
+  Is[0] = M;
+
+  while (0 < i) {
+    if(SENTINEL == Is[i]) {
+      Is[i] = Is[i-1];
+    }
+    --Is[i];
+
+    if (limit == i) {
+      (*func)(limit, Is, arg);
+    }
+
+    if(0 == Is[i]) {
+      //Is[i] = SENTINEL;
+      --i;
+    } else if (limit > i) {
+	++i;
+    }
+  }
+}
+
 
 /* core structure */
 struct Score {
@@ -323,16 +354,20 @@ struct FirstBlushArgs {
   layout_t pos;
 };
 
-void FirstBlushWork(layout_t name, uint limit, node_t *Is, void* _arg) {
+void FirstBlushWork(
+#ifdef VERIFY
+		    layout_t name,
+#endif
+		    uint limit, node_t *Is, void* _arg) {
   struct FirstBlushArgs *args = _arg;
 
 #ifdef VERIFY
   args->curr[args->pos].name = name;
 #endif
-  args->curr[args->pos].scores[0] = !checkIfAlive(name);
+  args->curr[args->pos].scores[0] = deadnessCheck(Is, limit);
 
 #ifdef VERIFY
-  assert(args->curr[args->pos].scores[0] == deadnessCheck(Is, limit));
+  assert(args->curr[args->pos].scores[0] == !checkIfAlive(name));
 #endif
 
   ++(args->pos);
@@ -349,7 +384,11 @@ struct IntermediateZoneArgs {
 
 };
 
-void IntermediateZoneWork(layout_t name, uint limit, node_t *Is, void* _arg) {
+void IntermediateZoneWork(
+#ifdef VERIFY
+			  layout_t name,
+#endif
+			  uint limit, node_t *Is, void* _arg) {
   struct IntermediateZoneArgs *args = _arg;
 
   // convenient alias
@@ -372,13 +411,13 @@ void IntermediateZoneWork(layout_t name, uint limit, node_t *Is, void* _arg) {
 
   // if there are no live children, check if alive
   if (limit == next->scores[limit - N - 1] ) {
-    next->scores[limit - N] = !checkIfAlive(name);
+    next->scores[limit - N] = deadnessCheck(Is, limit);
 #ifdef VERIFY
     if (1 == next->scores[limit - N]) {
       ++args->dethklok;
-      assert(deadnessCheck(Is, limit));
+      assert(!checkIfAlive(name));
     } else {
-      assert(!deadnessCheck(Is, limit));
+      assert(checkIfAlive(name));
     }
 #endif
   } else {
@@ -396,7 +435,12 @@ void IntermediateZoneWork(layout_t name, uint limit, node_t *Is, void* _arg) {
   ++(args->pos);
 }
 
-void TerminalWork(layout_t name, uint limit, node_t *Is, void* _arg) {
+void TerminalWork(
+#ifdef VERIFY
+		  layout_t name,
+#endif
+		  uint limit, node_t *Is, void* _arg) {
+
   struct IntermediateZoneArgs *args = _arg;
 
   // convenient alias
@@ -444,7 +488,11 @@ int main(int argc, char** argv) {
   arg.curr = curr;
   arg.pos = 0;
 
+#ifdef VERIFY
   walkOrdered(N, &FirstBlushWork, (void*)&arg);
+#else
+  walkOrderedNameless(N, &FirstBlushWork, (void*)&arg);
+#endif
 
   node_t i;
   for (i = N+1; i <= (M/2); ++i) {
@@ -464,7 +512,11 @@ int main(int argc, char** argv) {
     argz.dethklok = 0;
 #endif
 
+#ifdef VERIFY
     walkOrdered(i, &IntermediateZoneWork, (void*)&argz);
+#else
+    walkOrderedNameless(i, &IntermediateZoneWork, (void*)&argz);
+#endif
 
     assert((next_size / sizeof(struct Score)) == argz.pos);
 #ifdef VERIFY
@@ -499,7 +551,11 @@ int main(int argc, char** argv) {
     argz.pos = 0;
     argz.layoutsInCurr = curr_size / sizeof(struct Score);
 
+#ifdef VERIFY
     walkOrdered(i, &TerminalWork, (void*)&argz);
+#else
+    walkOrderedNameless(i, &TerminalWork, (void*)&argz);
+#endif
 
     assert((next_size / sizeof(struct Score)) == argz.pos);
 
