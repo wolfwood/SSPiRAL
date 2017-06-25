@@ -128,6 +128,64 @@ void myunmap(void* ptr, uint64_t size) {
   }
 }
 
+bool deadnessCheck(const node_t *Is, const int len) {
+  int j = len;
+
+  //  for(node_t n = 1 << (N-1); n > 0; n >>= 1) {
+  for(node_t n = 1; n < M; n <<= 1) {
+    while (j > 1 && (Is[j]+1) < n) {
+      --j;
+    }
+
+    if ((Is[j]+1) != n) {
+      node_t temp = n;
+
+      node_t Js[len+1];
+      const node_t SENTINEL = 3;
+
+      for (uint k = 1; k <= len; ++k) {
+	Js[k] = SENTINEL;
+      }
+
+      // one greater than the highest acceptable value - gets fed into the next element
+      Js[0] = 0;
+
+      bool alive = false;
+      uint i = 1;
+
+      while (0 < i) {
+	if(0 == Js[i]) {
+	  //temp ^= Is[i];
+	  Js[i] = SENTINEL;
+	  --i;
+	} else {
+	  if(SENTINEL == Js[i]) {
+	    Js[i] = 2;
+	  }
+	  temp ^= Is[i] +1;
+
+	  if (0 == temp) {
+	    // continue outer loop
+	    alive = true;
+	    break;
+	  }
+
+	  --Js[i];
+	  if (len > i) {
+	    ++i;
+	  }
+	}
+      }
+
+      if (!alive) {
+	return true;
+      }
+    }
+  }
+
+  return false;
+}
+
 bool recurseCheck(layout_t name, node_t n, node_t i) {
   for(; i <= M; ++i) {
     layout_t l = ((layout_t)1) << (i - 1);
@@ -239,7 +297,9 @@ void walkOrdered(const uint limit, void(*func)(layout_t name, uint limit, node_t
 
 /* core structure */
 struct Score {
+#ifdef VERIFY
   layout_t name;
+#endif
   score_t scores[SCORE_SIZE];
 };
 
@@ -266,8 +326,14 @@ struct FirstBlushArgs {
 void FirstBlushWork(layout_t name, uint limit, node_t *Is, void* _arg) {
   struct FirstBlushArgs *args = _arg;
 
+#ifdef VERIFY
   args->curr[args->pos].name = name;
+#endif
   args->curr[args->pos].scores[0] = !checkIfAlive(name);
+
+#ifdef VERIFY
+  assert(args->curr[args->pos].scores[0] == deadnessCheck(Is, limit));
+#endif
 
   ++(args->pos);
 }
@@ -276,7 +342,6 @@ struct IntermediateZoneArgs {
   struct Score *curr;
   struct Score *next;
   layout_t pos;
-  node_t nodesInLayout;
   uint64_t layoutsInCurr;
 #ifdef VERIFY
   score_t dethklok;
@@ -289,35 +354,42 @@ void IntermediateZoneWork(layout_t name, uint limit, node_t *Is, void* _arg) {
 
   // convenient alias
   struct Score *next = &args->next[args->pos];
+#ifdef VERIFY
   next->name = name;
+#endif
 
   // add each child in
-  for (int i = 1; i <= args->nodesInLayout; ++i) {
-    struct Score *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, args->nodesInLayout, i)];
+  for (int i = 1; i <= limit; ++i) {
+    struct Score *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, limit, i)];
+#ifdef VERIFY
     assert(temp->name == (name ^ ((layout_t)1 << Is[i])));
+#endif
 
-    for (int j = 0; j < (args->nodesInLayout - N); ++j) {
+    for (int j = 0; j < (limit - N); ++j) {
       next->scores[j] += temp->scores[j];
     }
   }
 
   // if there are no live children, check if alive
-  if (args->nodesInLayout == next->scores[args->nodesInLayout - N - 1] ) {
-    next->scores[args->nodesInLayout - N] = !checkIfAlive(name);
+  if (limit == next->scores[limit - N - 1] ) {
+    next->scores[limit - N] = !checkIfAlive(name);
 #ifdef VERIFY
-    if (1 == next->scores[args->nodesInLayout - N]) {
+    if (1 == next->scores[limit - N]) {
       ++args->dethklok;
+      assert(deadnessCheck(Is, limit));
+    } else {
+      assert(!deadnessCheck(Is, limit));
     }
 #endif
   } else {
-    next->scores[args->nodesInLayout - N] = 0;
+    next->scores[limit - N] = 0;
   }
 
   // normalize - wtf is this even? - overcounting but I forget why
 #ifdef NORMALIZE
-  for (int j = 2; j <= (args->nodesInLayout - N); ++j) {
-    assert(0 == next->scores[(args->nodesInLayout - N) - j] % j);
-    next->scores[(args->nodesInLayout - N) - j] /= j;
+  for (int j = 2; j <= (limit - N); ++j) {
+    assert(0 == next->scores[(limit - N) - j] % j);
+    next->scores[(limit - N) - j] /= j;
   }
 #endif
 
@@ -329,12 +401,16 @@ void TerminalWork(layout_t name, uint limit, node_t *Is, void* _arg) {
 
   // convenient alias
   struct Score *next = &args->next[args->pos];
+#ifdef VERIFY
   next->name = name;
+#endif
 
   // add each child in
-  for (int i = 1; i <= args->nodesInLayout; ++i) {
-    struct Score *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, args->nodesInLayout, i)];
+  for (int i = 1; i <= limit; ++i) {
+    struct Score *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, limit, i)];
+#ifdef VERIFY
     assert(temp->name == (name ^ ((layout_t)1 << Is[i])));
+#endif
 
     for (int j = 0; j < SCORE_SIZE; ++j) {
       next->scores[j] += temp->scores[j];
@@ -344,7 +420,7 @@ void TerminalWork(layout_t name, uint limit, node_t *Is, void* _arg) {
   // normalize - wtf is this even? - overcounting but I forget why
 #ifdef NORMALIZE
   for (int j = 0; j < SCORE_SIZE; ++j) {
-    uint adjustment = args->nodesInLayout - (M/2);
+    uint adjustment = limit - (M/2);
     assert(0 == next->scores[SCORE_SIZE - j - 1] % (j + adjustment));
     next->scores[SCORE_SIZE - j - 1] /= (j + adjustment);
   }
@@ -383,7 +459,6 @@ int main(int argc, char** argv) {
     argz.curr = curr;
     argz.next = next;
     argz.pos = 0;
-    argz.nodesInLayout = i;
     argz.layoutsInCurr = curr_size / sizeof(struct Score);
 #ifdef VERIFY
     argz.dethklok = 0;
@@ -422,7 +497,6 @@ int main(int argc, char** argv) {
     argz.curr = curr;
     argz.next = next;
     argz.pos = 0;
-    argz.nodesInLayout = i;
     argz.layoutsInCurr = curr_size / sizeof(struct Score);
 
     walkOrdered(i, &TerminalWork, (void*)&argz);
