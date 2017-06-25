@@ -81,7 +81,7 @@ struct Score* mymap(uint64_t* size) {
    *size = ((size/twoMB) +1) * twoMB;
    }*/
 
-  char fname[] = "/home/wolfwood/deletemeXXXXXX";
+  char fname[] = "/mnt/media/deletemeXXXXXX";
 
   int tfd = mkstemp(fname);
 
