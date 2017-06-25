@@ -7,7 +7,7 @@ X tune custom types based on SPIRAL_N size
 - tune nauty WORDSIZE and MAXN and lib variant based on SPIRAL_N size
 
 * SCORE
-- remove total count from score, use bin. coef. to validate collection size
+X remove total count from score, use bin. coef. to validate collection size
 - track multiples separately from uplinks
 - normalization for de-duped nodes ?
 
@@ -25,17 +25,18 @@ X tune custom types based on SPIRAL_N size
 - print maxima systems of equations
 
 * MULTITHREAD/PERSISTENT
-- walk prospective nodes, read children, than do a single write - avoids contention for RMW of nodes, complicates enumeration in parallel, reduces liveness checks
+X walk prospective nodes, read children, than do a single write - avoids contention for RMW of nodes, complicates enumeration in parallel, reduces liveness checks
 
 * STATE REDUCTION
-- trim score range where always dead or always alive
+X trim score range where always dead or always alive
+- keeps scores in ordered map, only store pointers to score in "layout" 
 
 * D
 - avoid growing score array
 - don't use .value() on aa
 
 * MAP (DE)ALLOC and SIZE OVERHEADS
-- use mmap'd array
+X use mmap'd array
 - use tree with custom allocation region that can be de-alloc'd in bulk
 - use hash with custom key (don't hash object, use name)
 - custom hash
