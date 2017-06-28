@@ -216,7 +216,7 @@ bool checkIfAlive(layout_t name) {
   return true;
 }
 
-void walkOrdered2(const uint limit, void(*func)(layout_t name, uint limit, node_t *Is, void* arg), void* arg) {
+void walkOrdered(const uint limit, void(*func)(layout_t name, uint limit, node_t *Is, void* arg), void* arg) {
   uint i = 1;
   layout_t ells[limit+1], name = 0;
   node_t Is[limit+1];
@@ -256,7 +256,7 @@ void walkOrdered2(const uint limit, void(*func)(layout_t name, uint limit, node_
   }
 }
 
-void walkOrdered(const uint limit, void(*func)(layout_t name, uint limit, node_t *Is, void* arg), void* arg) {
+void walkOrdered2(const uint limit, void(*func)(layout_t name, uint limit, node_t *Is, void* arg), void* arg) {
   uint i = 1;
   layout_t name = 0;
   node_t Is[limit+1];
