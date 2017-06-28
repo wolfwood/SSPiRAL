@@ -48,6 +48,7 @@ layout_t node2layout(node_t n) {
 
 static int* coeffs[M+1];
 
+// over-allocates, and zeros [n][n+1] to allow us to skip the (n < k) check below
 void initCoeffs(){
   coeffs[0] = calloc(2, sizeof(int));
 
@@ -78,7 +79,7 @@ int binomialCoeff(int n, int k) {
   return coeffs[n][k];
 }
 
-struct Layout* mymap(uint64_t* size) {
+void* mymap(uint64_t* size) {
 #ifdef FILEBACKED
   /*if (*size % twoMB) {
    *size = ((size/twoMB) +1) * twoMB;
