@@ -317,10 +317,9 @@ void walkOrderedNameless(const uint limit, void(*func)(uint limit, node_t *Is, v
     }
 
     if(0 == Is[i]) {
-      //Is[i] = SENTINEL;
       --i;
     } else if (limit > i) {
-	++i;
+      ++i;
     }
   }
 }
