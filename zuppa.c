@@ -79,7 +79,7 @@ int binomialCoeff(int n, int k) {
 }
 
 struct Layout* mymap(uint64_t* size) {
-#ifndef NFILEBACKED
+#ifdef FILEBACKED
   /*if (*size % twoMB) {
    *size = ((size/twoMB) +1) * twoMB;
    }*/
