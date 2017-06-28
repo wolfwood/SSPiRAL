@@ -490,7 +490,7 @@ void IntermediateZoneWork(
   }
 
   // normalize - wtf is this even? - overcounting but I forget why
-#ifdef NORMALIZE
+#ifdef OLDNORMALIZE
   for (int j = 2; j <= (limit - N); ++j) {
     assert(0 == next_ml->scores[(limit - N) - j] % j);
     next_ml->scores[(limit - N) - j] /= j;
@@ -544,7 +544,7 @@ void TerminalWork(
   }
 
   // normalize - wtf is this even? - overcounting but I forget why
-#ifdef NORMALIZE
+#ifdef OLDNORMALIZE
   for (int j = 0; j < SCORE_SIZE; ++j) {
     uint adjustment = limit - (M/2);
     assert(0 == next_ml->scores[SCORE_SIZE - j - 1] % (j + adjustment));
@@ -629,6 +629,15 @@ int main(int argc, char** argv) {
     }
 #endif
 
+#ifdef NORMALIZE
+    for (mlidx_t k = 0; k < argz.ml_idx; ++k) {
+      for (int j = 2; j <= (i - N); ++j) {
+	assert(0 == argz.next_ml[k].scores[(i - N) - j] % j);
+	argz.next_ml[k].scores[(i - N) - j] /= j;
+      }
+    }
+#endif
+
 #ifdef PRINTSCORE
     printf(" - %u\n", argz.ml_idx);
     twalk(argz.rootp, &printScore);
@@ -678,6 +687,16 @@ int main(int argc, char** argv) {
 #endif
 
     assert((next_size / sizeof(struct Layout)) == argz.pos);
+
+#ifdef NORMALIZE
+    for (mlidx_t k = 0; k < argz.ml_idx; ++k) {
+      for (int j = 0; j < SCORE_SIZE; ++j) {
+	uint adjustment = i - (M/2);
+	assert(0 == argz.next_ml[k].scores[SCORE_SIZE - j - 1] % (j + adjustment));
+	argz.next_ml[k].scores[SCORE_SIZE - j - 1] /= (j + adjustment);
+      }
+    }
+#endif
 
 #ifdef PRINTSCORE
     printf(" - %u\n", argz.ml_idx);
