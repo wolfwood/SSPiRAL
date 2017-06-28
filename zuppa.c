@@ -24,7 +24,7 @@
 typedef uint8_t node_t;
 typedef uint32_t layout_t;  // needs >= M bits
 typedef uint32_t score_t;   // enough bits to hold M choose M/2 ?
-
+typedef uint8_t mlidx_t;
 
 /* vars */
 //const node_t N = 4;
@@ -37,6 +37,8 @@ typedef uint32_t score_t;   // enough bits to hold M choose M/2 ?
 
 #define twoMB (2*1024*1024)
 
+// maximum number of unique MetaLayouts (131 for N=5)
+#define ML_SIZE (131+1)
 
 /* util */
 node_t MfromN(node_t n) { return ((node_t)1 << n) - 1;}
@@ -76,7 +78,7 @@ int binomialCoeff(int n, int k) {
   return coeffs[n][k];
 }
 
-struct Score* mymap(uint64_t* size) {
+struct Layout* mymap(uint64_t* size) {
 #ifndef NFILEBACKED
   /*if (*size % twoMB) {
    *size = ((size/twoMB) +1) * twoMB;
@@ -327,17 +329,21 @@ void walkOrderedNameless(const uint limit, void(*func)(uint limit, node_t *Is, v
 
 
 /* core structure */
-struct Score {
+struct Layout {
 #ifdef VERIFY
   layout_t name;
 #endif
+  mlidx_t scoreIdx;
+};
+
+struct MetaLayout {
   score_t scores[SCORE_SIZE];
 };
 
 /* libc Tree functions */
 int scoreCompare(const void *_a, const void *_b) {
-  struct Score* a = (struct Score*)_a;
-  struct Score* b = (struct Score*)_b;
+  struct MetaLayout* a = (struct MetaLayout*)_a;
+  struct MetaLayout* b = (struct MetaLayout*)_b;
 
   for (int i = SCORE_SIZE -1; i >= 0; --i) {
     if(a->scores[i] < b->scores[i]) {
@@ -355,29 +361,14 @@ void noop(void *nodep) {
 }
 
 void printScore(const void *nodep, const VISIT which, const int depth) {
-
   if (postorder == which || leaf == which) {
-    struct Score** s = (struct Score**) nodep;
+    struct MetaLayout** s = (struct MetaLayout**) nodep;
+
     for (uint i = 0; i < SCORE_SIZE; ++i) {
       printf("  %u", (*s)->scores[i]);
     }
     printf("\n");
   }
-}
-
-void printUniqueScores(struct Score* s, layout_t num_scores) {
-  void* rootp = NULL;
-  uint num_uniques = 0;
-  for (uint j = 0; j < num_scores; ++j) {
-    if (NULL == tfind(&s[j], &rootp, &scoreCompare)) {
-      ++num_uniques;
-      tsearch(&s[j], &rootp, &scoreCompare);
-    }
-  }
-
-  printf(" - %u\n", num_uniques);
-  twalk(rootp, &printScore);
-  //tdestroy(rootp, &noop);
 }
 
 uint directLookup(const node_t *Is, int len, const int oddManOut) {
@@ -397,8 +388,11 @@ uint directLookup(const node_t *Is, int len, const int oddManOut) {
 
 /* core work functions, applied with walkOrdered */
 struct FirstBlushArgs {
-  struct Score *curr;
+  struct Layout *curr;
   layout_t pos;
+  struct MetaLayout *ml;
+  layout_t ml_idx;
+  void* rootp;
 };
 
 void FirstBlushWork(
@@ -408,27 +402,43 @@ void FirstBlushWork(
 		    uint limit, node_t *Is, void* _arg) {
   struct FirstBlushArgs *args = _arg;
 
+  struct MetaLayout *next_ml = &args->ml[args->ml_idx];
+
 #ifdef VERIFY
   args->curr[args->pos].name = name;
 #endif
-  args->curr[args->pos].scores[0] = deadnessCheck(Is, limit);
+  next_ml->scores[0] = deadnessCheck(Is, limit);
 
 #ifdef VERIFY
-  assert(args->curr[args->pos].scores[0] == !checkIfAlive(name));
+  assert(next_ml->scores[0] == !checkIfAlive(name));
 #endif
+
+  struct MetaLayout* tmp = *(struct MetaLayout**)tsearch(next_ml, &(args->rootp), &scoreCompare);
+
+  assert(!scoreCompare(tmp, next_ml));
+
+  args->curr[args->pos].scoreIdx = tmp - args->ml;
+
+  if (args->ml_idx == args->curr[args->pos].scoreIdx) {
+    ++args->ml_idx;
+    assert(ML_SIZE > args->ml_idx);
+  }
 
   ++(args->pos);
 }
 
 struct IntermediateZoneArgs {
-  struct Score *curr;
-  struct Score *next;
+  struct Layout *curr;
+  struct MetaLayout *curr_ml;
+  struct Layout *next;
+  struct MetaLayout *next_ml;
+  layout_t ml_idx;
   layout_t pos;
   uint64_t layoutsInCurr;
 #ifdef VERIFY
   score_t dethklok;
 #endif
-
+  void *rootp;
 };
 
 void IntermediateZoneWork(
@@ -439,28 +449,36 @@ void IntermediateZoneWork(
   struct IntermediateZoneArgs *args = _arg;
 
   // convenient alias
-  struct Score *next = &args->next[args->pos];
+  struct Layout *next = &args->next[args->pos];
+  struct MetaLayout *next_ml = &args->next_ml[args->ml_idx];
 #ifdef VERIFY
   next->name = name;
 #endif
 
   // add each child in
   for (int i = 1; i <= limit; ++i) {
-    struct Score *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, limit, i)];
+    struct Layout *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, limit, i)];
+    struct MetaLayout *temp_ml = &args->curr_ml[temp->scoreIdx];
 #ifdef VERIFY
     assert(temp->name == (name ^ ((layout_t)1 << Is[i])));
 #endif
 
-    for (int j = 0; j < (limit - N); ++j) {
-      next->scores[j] += temp->scores[j];
+    if (1 == i) {
+      for (int j = 0; j < (limit - N); ++j) {
+	next_ml->scores[j] = temp_ml->scores[j];
+      }
+    } else {
+      for (int j = 0; j < (limit - N); ++j) {
+	next_ml->scores[j] += temp_ml->scores[j];
+      }
     }
   }
 
   // if there are no live children, check if alive
-  if (limit == next->scores[limit - N - 1] ) {
-    next->scores[limit - N] = deadnessCheck(Is, limit);
+  if (limit == next_ml->scores[limit - N - 1] ) {
+    next_ml->scores[limit - N] = deadnessCheck(Is, limit);
 #ifdef VERIFY
-    if (1 == next->scores[limit - N]) {
+    if (1 == next_ml->scores[limit - N]) {
       ++args->dethklok;
       assert(!checkIfAlive(name));
     } else {
@@ -468,16 +486,25 @@ void IntermediateZoneWork(
     }
 #endif
   } else {
-    next->scores[limit - N] = 0;
+    next_ml->scores[limit - N] = 0;
   }
 
   // normalize - wtf is this even? - overcounting but I forget why
 #ifdef NORMALIZE
   for (int j = 2; j <= (limit - N); ++j) {
-    assert(0 == next->scores[(limit - N) - j] % j);
-    next->scores[(limit - N) - j] /= j;
+    assert(0 == next_ml->scores[(limit - N) - j] % j);
+    next_ml->scores[(limit - N) - j] /= j;
   }
 #endif
+
+  // next_ml is a temp, unless its unique, then we store it
+  next->scoreIdx = (*(struct MetaLayout**)tsearch(&(args->next_ml[args->ml_idx]), &(args->rootp), &scoreCompare))
+    - args->next_ml;
+
+  if (args->ml_idx == next->scoreIdx) {
+    ++args->ml_idx;
+    assert(ML_SIZE > args->ml_idx);
+  }
 
   ++(args->pos);
 }
@@ -491,20 +518,28 @@ void TerminalWork(
   struct IntermediateZoneArgs *args = _arg;
 
   // convenient alias
-  struct Score *next = &args->next[args->pos];
+  struct Layout *next = &args->next[args->pos];
+  struct MetaLayout *next_ml = &args->next_ml[args->ml_idx];
 #ifdef VERIFY
   next->name = name;
 #endif
 
   // add each child in
   for (int i = 1; i <= limit; ++i) {
-    struct Score *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, limit, i)];
+    struct Layout *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, limit, i)];
+    struct MetaLayout *temp_ml = &args->curr_ml[temp->scoreIdx];
 #ifdef VERIFY
     assert(temp->name == (name ^ ((layout_t)1 << Is[i])));
 #endif
 
-    for (int j = 0; j < SCORE_SIZE; ++j) {
-      next->scores[j] += temp->scores[j];
+    if (1 == i) {
+      for (int j = 0; j < SCORE_SIZE; ++j) {
+	next_ml->scores[j] = temp_ml->scores[j];
+      }
+    } else {
+      for (int j = 0; j < SCORE_SIZE; ++j) {
+	next_ml->scores[j] += temp_ml->scores[j];
+      }
     }
   }
 
@@ -512,28 +547,44 @@ void TerminalWork(
 #ifdef NORMALIZE
   for (int j = 0; j < SCORE_SIZE; ++j) {
     uint adjustment = limit - (M/2);
-    assert(0 == next->scores[SCORE_SIZE - j - 1] % (j + adjustment));
-    next->scores[SCORE_SIZE - j - 1] /= (j + adjustment);
+    assert(0 == next_ml->scores[SCORE_SIZE - j - 1] % (j + adjustment));
+    next_ml->scores[SCORE_SIZE - j - 1] /= (j + adjustment);
   }
 #endif
+
+  // next_ml is a temp, unless its unique, then we store it
+  next->scoreIdx = (*(struct MetaLayout**)tsearch(&(args->next_ml[args->ml_idx]), &(args->rootp), &scoreCompare))
+    - args->next_ml;
+
+  if (args->ml_idx == next->scoreIdx) {
+    ++args->ml_idx;
+    assert(ML_SIZE > args->ml_idx);
+  }
+
   ++(args->pos);
 }
 
 
 int main(int argc, char** argv) {
-  struct Score *curr, *next;
+  struct Layout *curr, *next;
 
   initCoeffs();
 
   printf("%d of %d\n", N, M);
 
-  uint64_t next_size, curr_size = binomialCoeff(M, N) * sizeof(struct Score);
+  struct MetaLayout *curr_ml = calloc(ML_SIZE, sizeof(struct MetaLayout));
+  struct MetaLayout *next_ml = calloc(ML_SIZE, sizeof(struct MetaLayout));
+
+  uint64_t next_size, curr_size = binomialCoeff(M, N) * sizeof(struct Layout);
   curr = mymap(&curr_size);
 
   /* populate first scores array, test liveness for all layouts */
   struct FirstBlushArgs arg;
   arg.curr = curr;
   arg.pos = 0;
+  arg.ml = curr_ml;
+  arg.ml_idx = 0;
+  arg.rootp = NULL;
 
 #ifdef VERIFY
   walkOrdered(N, &FirstBlushWork, (void*)&arg);
@@ -541,10 +592,12 @@ int main(int argc, char** argv) {
   walkOrderedNameless(N, &FirstBlushWork, (void*)&arg);
 #endif
 
+  //tdestroy(arg.rootp, &noop);
+
   node_t i;
   for (i = N+1; i <= (M/2); ++i) {
     // set up next
-    next_size = binomialCoeff(M, i) * sizeof(struct Score);
+    next_size = binomialCoeff(M, i) * sizeof(struct Layout);
     next = mymap(&next_size);
 
     printf("-%d\n", i);
@@ -554,7 +607,11 @@ int main(int argc, char** argv) {
     argz.curr = curr;
     argz.next = next;
     argz.pos = 0;
-    argz.layoutsInCurr = curr_size / sizeof(struct Score);
+    argz.layoutsInCurr = curr_size / sizeof(struct Layout);
+    argz.curr_ml = curr_ml;
+    argz.next_ml = next_ml;
+    argz.ml_idx = 0;
+    argz.rootp = NULL;
 #ifdef VERIFY
     argz.dethklok = 0;
 #endif
@@ -565,7 +622,7 @@ int main(int argc, char** argv) {
     walkOrderedNameless(i, &IntermediateZoneWork, (void*)&argz);
 #endif
 
-    assert((next_size / sizeof(struct Score)) == argz.pos);
+    assert((next_size / sizeof(struct Layout)) == argz.pos);
 #ifdef VERIFY
     if ((M/2) == i) {
       assert(M == argz.dethklok);
@@ -573,13 +630,20 @@ int main(int argc, char** argv) {
 #endif
 
 #ifdef PRINTSCORE
-    printUniqueScores(next, (next_size / sizeof(struct Score)));
+    printf(" - %u\n", argz.ml_idx);
+    twalk(argz.rootp, &printScore);
 #endif
 
-      // rotate arrays
+    // rotate arrays
     myunmap(curr, curr_size);
     curr = next;
     curr_size = next_size;
+    struct MetaLayout *temp = curr_ml;
+    curr_ml = next_ml;
+    next_ml = temp;
+    //memset(next_ml, 0, ML_SIZE*sizeof(struct MetaLayout));
+
+    //tdestroy(argz.rootp, &noop);
 
 #ifdef BENCH
     if (BENCH == i) {
@@ -591,7 +655,7 @@ int main(int argc, char** argv) {
 #ifndef BENCH
   for (; i <= M; ++i) {
     // set up next
-    next_size = binomialCoeff(M, i) * sizeof(struct Score);
+    next_size = binomialCoeff(M, i) * sizeof(struct Layout);
     next = mymap(&next_size);
 
     printf("%d\n", i);
@@ -601,7 +665,11 @@ int main(int argc, char** argv) {
     argz.curr = curr;
     argz.next = next;
     argz.pos = 0;
-    argz.layoutsInCurr = curr_size / sizeof(struct Score);
+    argz.layoutsInCurr = curr_size / sizeof(struct Layout);
+    argz.curr_ml = curr_ml;
+    argz.next_ml = next_ml;
+    argz.ml_idx = 0;
+    argz.rootp = NULL;
 
 #ifdef VERIFY
     walkOrdered(i, &TerminalWork, (void*)&argz);
@@ -609,19 +677,26 @@ int main(int argc, char** argv) {
     walkOrderedNameless(i, &TerminalWork, (void*)&argz);
 #endif
 
-    assert((next_size / sizeof(struct Score)) == argz.pos);
+    assert((next_size / sizeof(struct Layout)) == argz.pos);
 
 #ifdef PRINTSCORE
-    printUniqueScores(next, (next_size / sizeof(struct Score)));
+    printf(" - %u\n", argz.ml_idx);
+    twalk(argz.rootp, &printScore);
 #endif
 
     // rotate arrays
     myunmap(curr, curr_size);
     curr = next;
     curr_size = next_size;
+    struct MetaLayout *temp = curr_ml;
+    curr_ml = next_ml;
+    next_ml = temp;
+    //memset(next_ml, 0, ML_SIZE*sizeof(struct MetaLayout));
+
+    //tdestroy(argz.rootp, &noop);
   }
 
-  assert(curr_size == sizeof(struct Score));
+  assert(curr_size == sizeof(struct Layout));
 #endif
 
   for (int j = 0; j < ((M+1)/2); ++j) {
@@ -631,7 +706,7 @@ int main(int argc, char** argv) {
 
   for (int j = SCORE_SIZE - 1; j >= 0; --j) {
     uint64_t total = binomialCoeff(M, (M/2) + SCORE_SIZE - j);
-    printf("%d %lu %lu\n", (M/2) + SCORE_SIZE - j, total - curr[0].scores[j], total);
+    printf("%d %lu %lu\n", (M/2) + SCORE_SIZE - j, total - curr_ml[0].scores[j], total);
   }
 
   for (int j = M - N + 1; j <= M; ++j) {
