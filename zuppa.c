@@ -18,6 +18,7 @@
 // unlink
 #include <unistd.h>
 
+#include <search.h>
 
 /* types */
 typedef uint8_t node_t;
@@ -333,6 +334,52 @@ struct Score {
   score_t scores[SCORE_SIZE];
 };
 
+/* libc Tree functions */
+int scoreCompare(const void *_a, const void *_b) {
+  struct Score* a = (struct Score*)_a;
+  struct Score* b = (struct Score*)_b;
+
+  for (int i = SCORE_SIZE -1; i >= 0; --i) {
+    if(a->scores[i] < b->scores[i]) {
+      return -1;
+    } else if (a->scores[i] > b->scores[i]) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+
+void noop(void *nodep) {
+  return;
+}
+
+void printScore(const void *nodep, const VISIT which, const int depth) {
+
+  if (postorder == which || leaf == which) {
+    struct Score** s = (struct Score**) nodep;
+    for (uint i = 0; i < SCORE_SIZE; ++i) {
+      printf("  %u", (*s)->scores[i]);
+    }
+    printf("\n");
+  }
+}
+
+void printUniqueScores(struct Score* s, layout_t num_scores) {
+  void* rootp = NULL;
+  uint num_uniques = 0;
+  for (uint j = 0; j < num_scores; ++j) {
+    if (NULL == tfind(&s[j], &rootp, &scoreCompare)) {
+      ++num_uniques;
+      tsearch(&s[j], &rootp, &scoreCompare);
+    }
+  }
+
+  printf(" - %u\n", num_uniques);
+  twalk(rootp, &printScore);
+  //tdestroy(rootp, &noop);
+}
+
 uint directLookup(const node_t *Is, int len, const int oddManOut) {
   uint idx = 0;
 
@@ -348,6 +395,7 @@ uint directLookup(const node_t *Is, int len, const int oddManOut) {
   return idx;
 }
 
+/* core work functions, applied with walkOrdered */
 struct FirstBlushArgs {
   struct Score *curr;
   layout_t pos;
@@ -523,6 +571,11 @@ int main(int argc, char** argv) {
       assert(M == argz.dethklok);
     }
 #endif
+
+#ifdef PRINTSCORE
+    printUniqueScores(next, (next_size / sizeof(struct Score)));
+#endif
+
       // rotate arrays
     myunmap(curr, curr_size);
     curr = next;
@@ -557,6 +610,10 @@ int main(int argc, char** argv) {
 #endif
 
     assert((next_size / sizeof(struct Score)) == argz.pos);
+
+#ifdef PRINTSCORE
+    printUniqueScores(next, (next_size / sizeof(struct Score)));
+#endif
 
     // rotate arrays
     myunmap(curr, curr_size);
