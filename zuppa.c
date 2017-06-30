@@ -387,6 +387,52 @@ uint directLookup(const node_t *Is, int len, const int oddManOut) {
   return idx;
 }
 
+void sumChildLayoutScores(
+#ifdef VERIFY
+			  layout_t name,
+#endif
+			  struct Layout *curr, layout_t layoutsInCurr, struct MetaLayout *curr_ml,
+			  const node_t *Is, int Is_len, struct MetaLayout *next_ml, int scores_len) {
+  uint beforeCoefs[Is_len -1];
+  uint afterCoefs[Is_len -1];
+  uint idx = 0;
+
+  // pre-calculate the combinadic components for each node, for both coming before and after the 'missing' node
+  for (int i = 1; i < Is_len; ++i) {
+    beforeCoefs[i-1] = binomialCoeff(Is[i], Is_len - i);
+    afterCoefs[i-1] = binomialCoeff(Is[i+1], Is_len - (i+1) + 1);
+
+    idx += afterCoefs[i-1];
+  }
+
+  {
+    const struct MetaLayout *temp_ml = &curr_ml[curr[layoutsInCurr - 1 - idx].scoreIdx];
+#ifdef VERIFY
+    assert(curr[layoutsInCurr - 1 - idx].name == (name ^ ((layout_t)1 << Is[1])));
+#endif
+
+    for (int j = 0; j < scores_len; ++j) {
+      next_ml->scores[j] = temp_ml->scores[j];
+    }
+  }
+
+ // add each child in
+  for (int i = 0; i < Is_len-1; ++i) {
+    //struct Layout *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, len, i)];
+    idx -= afterCoefs[i];
+    idx += beforeCoefs[i];
+
+    const struct MetaLayout *temp_ml = &curr_ml[curr[layoutsInCurr - 1 - idx].scoreIdx];
+#ifdef VERIFY
+    assert(curr[layoutsInCurr - 1 - idx].name == (name ^ ((layout_t)1 << Is[i+2])));
+#endif
+
+    for (int j = 0; j < scores_len; ++j) {
+      next_ml->scores[j] += temp_ml->scores[j];
+    }
+  }
+}
+
 /* core work functions, applied with walkOrdered */
 struct FirstBlushArgs {
   struct Layout *curr;
@@ -456,24 +502,12 @@ void IntermediateZoneWork(
   next->name = name;
 #endif
 
-  // add each child in
-  for (int i = 1; i <= limit; ++i) {
-    struct Layout *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, limit, i)];
-    struct MetaLayout *temp_ml = &args->curr_ml[temp->scoreIdx];
+  sumChildLayoutScores(
 #ifdef VERIFY
-    assert(temp->name == (name ^ ((layout_t)1 << Is[i])));
+		       name,
 #endif
+		       args->curr, args->layoutsInCurr, args->curr_ml, Is, limit, next_ml, (limit - N));
 
-    if (1 == i) {
-      for (int j = 0; j < (limit - N); ++j) {
-	next_ml->scores[j] = temp_ml->scores[j];
-      }
-    } else {
-      for (int j = 0; j < (limit - N); ++j) {
-	next_ml->scores[j] += temp_ml->scores[j];
-      }
-    }
-  }
 
   // if there are no live children, check if alive
   if (limit == next_ml->scores[limit - N - 1] ) {
@@ -526,23 +560,12 @@ void TerminalWork(
 #endif
 
   // add each child in
-  for (int i = 1; i <= limit; ++i) {
-    struct Layout *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, limit, i)];
-    struct MetaLayout *temp_ml = &args->curr_ml[temp->scoreIdx];
+  sumChildLayoutScores(
 #ifdef VERIFY
-    assert(temp->name == (name ^ ((layout_t)1 << Is[i])));
+		       name,
 #endif
+		       args->curr, args->layoutsInCurr, args->curr_ml, Is, limit, next_ml, SCORE_SIZE);
 
-    if (1 == i) {
-      for (int j = 0; j < SCORE_SIZE; ++j) {
-	next_ml->scores[j] = temp_ml->scores[j];
-      }
-    } else {
-      for (int j = 0; j < SCORE_SIZE; ++j) {
-	next_ml->scores[j] += temp_ml->scores[j];
-      }
-    }
-  }
 
   // normalize - wtf is this even? - overcounting but I forget why
 #ifdef OLDNORMALIZE
