@@ -26,27 +26,19 @@ struct GlobalStats {
   static node_t nodesInLayout = 0;
 
 
-  static immutable score_t[][] coeffs;
+  static immutable score_t[M+1][M+1] coeffs;
 
   static this(){
-    score_t[][] co;
-
-    co.length = M+1;
-    co[0].length = 2;
-    co[0][0] = 1;
+    coeffs[0][0] = 1;
 
     for (uint i = 1; i <= M; ++i) {
-      co[i].length = i +2;
-
-      co[i][0] = 1;
-      co[i][i] = 1;
+      coeffs[i][0] = 1;
+      coeffs[i][i] = 1;
 
       for (uint j = 1; j < i; ++j) {
-	co[i][j] = co[i-1][j] + co[i-1][j-1];
+	coeffs[i][j] = coeffs[i-1][j] + coeffs[i-1][j-1];
       }
     }
-
-    coeffs = cast(immutable)co;
   }
 }
 
