@@ -132,6 +132,7 @@ void myunmap(void* ptr, uint64_t size) {
   }
 }
 
+// XXX: depth should ever be more than N, see NOTES
 bool deadnessCheck(const node_t *Is, const int len) {
   int j = len;
 
@@ -387,22 +388,24 @@ uint directLookup(const node_t *Is, int len, const int oddManOut) {
   return idx;
 }
 
-void sumChildLayoutScores(
+void sumChildLayoutScores2(
 #ifdef VERIFY
 			  layout_t name,
 #endif
 			  struct Layout *curr, layout_t layoutsInCurr, struct MetaLayout *curr_ml,
 			  const node_t *Is, int Is_len, struct MetaLayout *next_ml, int scores_len) {
-  uint beforeCoefs[Is_len -1];
-  uint afterCoefs[Is_len -1];
+  uint32_t deltaCoefs[Is_len -1];
   uint idx = 0;
 
   // pre-calculate the combinadic components for each node, for both coming before and after the 'missing' node
   for (int i = 1; i < Is_len; ++i) {
-    beforeCoefs[i-1] = binomialCoeff(Is[i], Is_len - i);
-    afterCoefs[i-1] = binomialCoeff(Is[i+1], Is_len - (i+1) + 1);
+    uint before = binomialCoeff(Is[i], Is_len - i);
+    uint after  = binomialCoeff(Is[i+1], Is_len - (i+1) + 1);
 
-    idx += afterCoefs[i-1];
+    deltaCoefs[i-1] = before - after;
+    assert(before > after);
+
+    idx += after;
   }
 
   {
@@ -419,6 +422,41 @@ void sumChildLayoutScores(
  // add each child in
   for (int i = 0; i < Is_len-1; ++i) {
     //struct Layout *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, len, i)];
+    idx += deltaCoefs[i];
+
+    const struct MetaLayout *temp_ml = &curr_ml[curr[layoutsInCurr - 1 - idx].scoreIdx];
+#ifdef VERIFY
+    assert(curr[layoutsInCurr - 1 - idx].name == (name ^ ((layout_t)1 << Is[i+2])));
+#endif
+
+    for (int j = 0; j < scores_len; ++j) {
+      next_ml->scores[j] += temp_ml->scores[j];
+    }
+  }
+}
+
+void sumChildLayoutScoresInner(
+#ifdef VERIFY
+			  layout_t name, const node_t *Is,
+#endif
+			   struct Layout *curr, layout_t layoutsInCurr, struct MetaLayout *curr_ml,
+			  uint idx, uint *beforeCoefs, uint *afterCoefs, int coefs_len,
+			  struct MetaLayout *next_ml, int scores_len) {
+
+  {
+    const struct MetaLayout *temp_ml = &curr_ml[curr[layoutsInCurr - 1 - idx].scoreIdx];
+#ifdef VERIFY
+    assert(curr[layoutsInCurr - 1 - idx].name == (name ^ ((layout_t)1 << Is[1])));
+#endif
+
+    for (int j = 0; j < scores_len; ++j) {
+      next_ml->scores[j] = temp_ml->scores[j];
+    }
+  }
+
+ // add each child in
+  for (int i = 0; i < coefs_len; ++i) {
+    //struct Layout *temp = &args->curr[args->layoutsInCurr - 1 - directLookup(Is, len, i)];
     idx -= afterCoefs[i];
     idx += beforeCoefs[i];
 
@@ -431,6 +469,33 @@ void sumChildLayoutScores(
       next_ml->scores[j] += temp_ml->scores[j];
     }
   }
+}
+
+void sumChildLayoutScores(
+#ifdef VERIFY
+			  layout_t name,
+#endif
+			  struct Layout *curr, layout_t layoutsInCurr, struct MetaLayout *curr_ml,
+			  const node_t *Is, int Is_len, struct MetaLayout *next_ml, int scores_len) {
+  uint beforeCoefs[Is_len -1];
+  uint afterCoefs[Is_len -1];
+  uint idx = 0;
+
+  // pre-calculate the combinadic components for each node, for both coming before and after the 'missing' node
+  for (int i = 0; i < (Is_len -1); ++i) {
+    uint before = binomialCoeff(Is[i+1], Is_len - (i+1));
+    uint after  = binomialCoeff(Is[i+2], Is_len - (i+2) + 1);
+    assert(before > after);
+    beforeCoefs[i] = before;
+    afterCoefs[i] = after;
+    idx += after;
+   }
+
+  sumChildLayoutScoresInner(
+#ifdef VERIFY
+			name, Is,
+#endif
+			curr, layoutsInCurr, curr_ml, idx, beforeCoefs, afterCoefs, Is_len -1, next_ml, scores_len);
 }
 
 /* core work functions, applied with walkOrdered */
