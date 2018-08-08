@@ -84,7 +84,7 @@ struct MetaLayout {
       }
       return 0;
     } else {
-      assert("you did a bad!");
+      assert(0, "you did a bad!");
     }
   }
 
