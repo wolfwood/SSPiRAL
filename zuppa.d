@@ -111,8 +111,14 @@ public:
     //super(limit);
     this.limit = limit;
 
-    curr.length = GlobalStats.coeffs[GlobalStats.M][limit];
+    curr = cast(Layout[])
+      MmapAllocator.instance.allocate(GlobalStats.coeffs[GlobalStats.M][limit]*Layout.sizeof);
+
     ml.length = GlobalStats.MLSize;
+  }
+
+  void free(){
+    MmapAllocator.instance.deallocate(curr);
   }
 
   MetaLayout* getScore() {return &ml[ml_idx];}
@@ -489,6 +495,7 @@ void main() {
     it.WalkOrdered();
 
     it.normalize();
+    prev.free();
     prev = curr;
   }
 
@@ -501,6 +508,7 @@ void main() {
     it.WalkOrdered();
 
     it.normalize();
+    prev.free();
     prev = curr;
   }
 
@@ -518,4 +526,6 @@ void main() {
   for (auto j = GlobalStats.M - GlobalStats.N + 1; j <= GlobalStats.M; ++j) {
     writeln(j, " ", 0, " ", GlobalStats.coeffs[GlobalStats.M][j]);
   }
+
+  prev.free();
 }
