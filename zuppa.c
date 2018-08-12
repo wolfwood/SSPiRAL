@@ -329,6 +329,50 @@ void walkOrderedNameless(const uint limit, void(*func)(uint limit, node_t *Is, v
   }
 }
 
+void walkCombinadically(const uint limit, void(*func)(uint limit, score_t idx, score_t *beforeCoeffs, score_t *afterCoeffs, void* arg), void* arg) {
+  uint i = 1;
+  node_t Is[limit+1];
+  const node_t SENTINEL = 0;
+
+  for (uint i = 1; i <= limit; ++i) {
+    Is[i] = SENTINEL;
+  }
+
+  // one greater than the highest acceptable value - gets fed into the next element
+  Is[0] = M;
+
+  while (0 < i) {
+    if(SENTINEL == Is[i]) {
+      Is[i] = Is[i-1];
+    }
+    --Is[i];
+
+    if (limit == i) {
+      uint beforeCoefs[limit -1];
+      uint afterCoefs[limit -1];
+      uint index = 0;
+
+      // pre-calculate the combinadic components for each node, for both coming before and after the 'missing' node
+      for (int i = 0; i < (limit -1); ++i) {
+	uint before = binomialCoeff(Is[i+1], limit - (i+1));
+	uint after  = binomialCoeff(Is[i+2], limit - (i+2) + 1);
+	assert(before > after);
+	beforeCoefs[i] = before;
+	afterCoefs[i] = after;
+	index += after;
+      }
+
+      (*func)(limit, index, beforeCoefs, afterCoefs, arg);
+    }
+
+    if(0 == Is[i]) {
+      --i;
+    } else if (limit > i) {
+      ++i;
+    }
+  }
+}
+
 
 /* core structure */
 struct Layout {
@@ -653,6 +697,49 @@ void TerminalWork(
   ++(args->pos);
 }
 
+void TerminalCombinadicWork(
+#ifdef VERIFY
+		  layout_t name,
+#endif
+		  uint limit, uint idx, uint *beforeCoefs, uint *afterCoefs, void* _arg) {
+
+  struct IntermediateZoneArgs *args = _arg;
+
+  // convenient alias
+  struct Layout *next = &args->next[args->pos];
+  struct MetaLayout *next_ml = &args->next_ml[args->ml_idx];
+#ifdef VERIFY
+  next->name = name;
+#endif
+
+  // add each child in
+  sumChildLayoutScoresInner(
+#ifdef VERIFY
+		       name,
+#endif
+		       args->curr, args->layoutsInCurr, args->curr_ml, idx, beforeCoefs, afterCoefs, limit-1, next_ml, SCORE_SIZE);
+
+
+  // normalize - wtf is this even? - overcounting but I forget why
+#ifdef OLDNORMALIZE
+  for (int j = 0; j < SCORE_SIZE; ++j) {
+    uint adjustment = limit - (M/2);
+    assert(0 == next_ml->scores[SCORE_SIZE - j - 1] % (j + adjustment));
+    next_ml->scores[SCORE_SIZE - j - 1] /= (j + adjustment);
+  }
+#endif
+
+  // next_ml is a temp, unless its unique, then we store it
+  next->scoreIdx = (*(struct MetaLayout**)tsearch(&(args->next_ml[args->ml_idx]), &(args->rootp), &scoreCompare))
+    - args->next_ml;
+
+  if (args->ml_idx == next->scoreIdx) {
+    ++args->ml_idx;
+    assert(ML_SIZE > args->ml_idx);
+  }
+
+  ++(args->pos);
+}
 
 int main(int argc, char** argv) {
   struct Layout *curr, *next;
@@ -772,7 +859,7 @@ int main(int argc, char** argv) {
 #ifdef VERIFY
     walkOrdered(i, &TerminalWork, (void*)&argz);
 #else
-    walkOrderedNameless(i, &TerminalWork, (void*)&argz);
+    walkCombinadically(i, &TerminalCombinadicWork, (void*)&argz);
 #endif
 
     assert((next_size / sizeof(struct Layout)) == argz.pos);
