@@ -31,6 +31,8 @@ int main (int argc, char** argv) {
 
     next.clear();
 
+    std::cout << score_t(GlobalStats::nodesInLayout) << std::endl;
+
     // for each layout in each metalist generate the next layer of layouts and calculate their scores
     for (auto it = curr.begin(); it != curr.end();) {
 #ifdef SPIRALNAUTY

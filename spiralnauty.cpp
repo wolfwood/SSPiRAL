@@ -5,7 +5,7 @@
 
 int main (int argc, char** argv) {
   // process args and initialize
-  GlobalStats::setN(2);
+  GlobalStats::setN(5);
 
   init_canon(GlobalStats::N, GlobalStats::M);
 
@@ -20,6 +20,8 @@ int main (int argc, char** argv) {
     layout_lookup& next = (GlobalStats::nodesInLayout % 2) ? temp1 : temp2;
 
     next.clear();
+
+    std::cout << GlobalStats::nodesInLayout << std::endl;
 
     // for each layout in each metalist generate the next layer of layouts and calculate their scores
     for (auto it = curr.begin(); it != curr.end();) {

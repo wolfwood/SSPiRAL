@@ -6,8 +6,7 @@
 
 #include <cassert>
 #include "types.h"
-
-constexpr node_t MfromN(node_t n) { return (node_t(1) << n) - 1;}
+#include <limits>
 
 const node_t GlobalStats::N=SPIRAL_N ;
 const node_t GlobalStats::M=MfromN(N);

@@ -37,6 +37,7 @@ typedef uint64_t score_t;   // enough bits to hold M choose M/2 ?
 #endif
 #endif
 
+constexpr node_t MfromN(node_t n) { return (node_t(1) << n) - 1;}
 
 
 #ifdef GOOGLE
@@ -113,6 +114,6 @@ struct Layout : GlobalStats {
 };
 
 struct MetaLayout : GlobalStats {
-  std::unordered_map<layout_t, Layout> layouts;
+    layout_lookup layouts;
 };
 #endif

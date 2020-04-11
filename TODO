@@ -41,3 +41,31 @@ X use mmap'd array
 - use hash with custom key (don't hash object, use name)
 - custom hash
 - custom "allocator" from array of Layout structs
+
+
+# Zuppa
+
+* Algorithmic
+- handrolled isomorphism checker - must have for N>=6
+- integration will require restructuring
+
+* Loop Tweaks
+- Afters
+- Sentinels
+- elim pre sentinel check, and reset iterations in limit's post sentinel check
+
+* Compiler
+- compile list of gcc flags to consider
+- irace for best params
+- acovea with biased defaults
+- acovea clang
+- pgo - applying 5 -> 6?
+- clang?
+
+* Achitectural
+- manual threading
+- OpenMP?
+- -parallelize-loops
+- overclocking Mesh and CPU
+- GPGPU / Vulkan compute
+- rust?

@@ -2,10 +2,14 @@
 #include "canonicalizer.h"
 
 void Layout::generateNautyLayouts(layout_lookup& ll) {
+#ifndef DENORMALIZE
   score.normalize();
+#endif
 
   int orbits[MAXN];
   get_orbits(nodes, orbits);
+
+  //std::cout << uint64_t(nodes) << ":\n";
 
   node_t k = M;
   for (node_t i = 0; i < M; ++i) {
@@ -17,9 +21,9 @@ void Layout::generateNautyLayouts(layout_lookup& ll) {
       k = i;
 
       for (node_t j = i+1; j < M; ++j) {
-	if (orbits[j] == orbits[i]) {
-	  ++multiplier;
-	}
+	      if (orbits[j] == orbits[i]) {
+	        ++multiplier;
+	      }
       }
 
       //if (GlobalStats::nodesInLayout) {
@@ -33,9 +37,9 @@ void Layout::generateNautyLayouts(layout_lookup& ll) {
       auto result = ll.find(temp);
 
       if (result != ll.end()) {
-	result->second.score.addMul(score, multiplier);
+	      result->second.score.addMul(score, multiplier);
       } else {
-	ll.emplace(std::piecewise_construct,
+        ll.emplace(std::piecewise_construct,
 		   std::forward_as_tuple(temp),
 		   std::forward_as_tuple(temp, *this, multiplier));
       }

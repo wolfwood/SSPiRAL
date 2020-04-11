@@ -5,8 +5,8 @@ CFLAGSclangcc= -Werror -march=native -flto -Ofast
 
 CXXDEBUGFLAGS=-std=c++14 -g -Werror -flto
 
-NAUTY=nauty26r7
-NAUTYFLAGS=-DWORDSIZE=64 -DMAXN=WORDSIZE -I $(NAUTY).$*
+NAUTY=nauty26r11
+NAUTYFLAGS=-DWORDSIZE=64 -DMAXN=WORDSIZE -I $(NAUTY).$* -fno-strict-aliasing
 
 HDRS=types.h
 SRCS=cpiral.cpp $(subst .h,.cpp,$(HDRS))

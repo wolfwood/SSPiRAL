@@ -15,7 +15,8 @@ int main (int argc, char** argv) {
   std::cout << argv[1] << ":" << std::endl;
   for (uint64_t i = 0; i < sizeof(val)*8ULL;++i) {
     if (val & (1ULL << i)) {
-      std::cout << i+1 << std::endl;
+      std::cout << " " << i+1;
     }
   }
+  std::cout << std::endl;
 }
