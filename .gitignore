@@ -12,3 +12,11 @@ nauty25r9/
 canon
 spiralnauty
 *.tar.gz
+*~
+\#*\#
+.gdb_history
+.idea/
+*.out
+*.dot
+*.json
+*.txt
