@@ -321,7 +321,29 @@ class Iterator {
       }
     }
   }
+  /*
+  void WalkCombinadically() {
+    uint i = 1;
+    Is[0] = GlobalStats.M;
 
+    while (0 < i) {
+      if (0 == Is[i]) {
+	Is[i] = Is[i-1];
+      }
+      --Is[i];
+
+      if (limit == i) {
+	oneStep();
+      }
+
+      if(0 == Is[i]) {
+	--i;
+      } else if (limit > i) {
+	++i;
+      }
+    }
+  }
+  */
   void sumChildLayoutScores(ref WorkContext curr, ref const WorkContext prev) {
     score_t[] beforeCoefs;
     score_t[] afterCoefs;
@@ -472,7 +494,8 @@ class WorkZone(bool LifeDetector): Iterator {
   }
 }
 
-void main() {
+
+int main(char[][]) {
   writeln(GlobalStats.N, " of ", GlobalStats.M);
 
   WorkContext curr, prev;
@@ -528,4 +551,7 @@ void main() {
   }
 
   prev.free();
+
+
+  return 0;
 }
