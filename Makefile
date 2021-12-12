@@ -1,6 +1,6 @@
 CXXS=g++ clang++
 CXXFLAGS=-std=c++14
-CFLAGSgcc= -Werror -O3 -march=native -floop-interchange -ftree-loop-distribution -floop-strip-mine -floop-block -ftree-vectorize -flto=4
+CFLAGSgcc= -Werror -O3 -march=native -floop-interchange -ftree-loop-distribution -floop-strip-mine -floop-block -ftree-vectorize
 CFLAGSclangcc= -Werror -march=native -flto -Ofast
 
 CXXDEBUGFLAGS=-std=c++14 -g -Werror -flto
@@ -22,7 +22,7 @@ spiral.%: $(SRCS) $(HDRS)
 	$* $(CXXFLAGS) ${CFLAGS$(*:%++=%cc)} -DSPIRAL_N=4 -o $@ $(SRCS)
 
 spiralnauty.%: $(SRCS) $(HDRS) canonicalizer.cpp canonicalizer.h typesnauty.cpp $(NAUTY).%/nauty.a
-	$* $(CXXFLAGS) ${CFLAGS$(*:%++=%cc)} $(NAUTYFLAGS) -DSPIRALNAUTY -DSPIRAL_N=4 -o $@ $(SRCS) canonicalizer.cpp typesnauty.cpp $(NAUTY).$*/nauty.a
+	$* $(CXXFLAGS) ${CFLAGS$(*:%++=%cc)} $(NAUTYFLAGS) -DSPIRALNAUTY -DSPIRAL_N=3 -o $@ $(SRCS) canonicalizer.cpp typesnauty.cpp $(NAUTY).$*/nauty.a
 
 spiral.debug.%: $(SRCS) $(HDRS)
 	$* ${CXXDEBUGFLAGS} -DSPIRAL_N=4 -o $@ $(SRCS)
