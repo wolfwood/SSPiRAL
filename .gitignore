@@ -20,3 +20,10 @@ spiralnauty
 *.dot
 *.json
 *.txt
+
+zig-cache/
+zig-out/
+.zigmod/
+zigmod.lock
+
+oprofile_data/
