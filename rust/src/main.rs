@@ -1,4 +1,3 @@
-
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
@@ -9,31 +8,37 @@ type Layout = u32;
 type Score = u32;
 type MlIdx = u8;
 
-const N : Node = 5;
-const M : Node = 31; //2_u8.pow(N.into())  - 1;
-const SCORE_SIZE : Score = (((M as Score) + 1) /2) - (N as Score);
-const ML_SIZE : Score = 131 + 1;
+const N: Node = 5;
+const M: Node = 31; //2_u8.pow(N.into())  - 1;
+const SCORE_SIZE: Score = (((M as Score) + 1) / 2) - (N as Score);
+const ML_SIZE: Score = 131 + 1;
+
+const COEFFS: Coeffs = Coeffs::new();
 
 struct Coeffs {
-    co : [[Score; 32 ]; 32], // XXX this shouldn't need CTFE to use (M+1)
+    co: [[Score; (M + 1) as usize]; (M + 1) as usize],
 }
 
 impl Coeffs {
-    fn new() -> Coeffs {
-        let mut c = [[0; 32 ]; 32];
+    const fn new() -> Coeffs {
+        let mut c = [[0; (M + 1) as usize]; (M + 1) as usize];
 
         c[0][0] = 1;
 
-        for i in 1..(usize::from(M)+1) {
+        let mut i = 1;
+        while i < (M + 1) as usize {
             c[i][0] = 1;
             c[i][i] = 1;
 
-            for j in 1..i {
-                c[i][j] = c[i-1][j] + c[i-1][j-1];
+            let mut j = 1;
+            while j <= i {
+                c[i][j] = c[i - 1][j] + c[i - 1][j - 1];
+                j += 1;
             }
+            i += 1;
         }
 
-        Coeffs{co:c}
+        Coeffs { co: c }
     }
 
     fn coeffs(&self, x: usize, y: usize) -> Score {
@@ -53,7 +58,6 @@ fn node2layout(n: Node) -> Layout {
     (1 as Layout) << (n - 1)
 }
 
-
 struct Lay {
     name: Layout,
     s_idx: MlIdx,
@@ -63,18 +67,16 @@ struct Lay {
 }*/
 
 struct MetaLayout {
-    scores: [Score; SCORE_SIZE as usize]
+    scores: [Score; SCORE_SIZE as usize],
 }
 
 struct WorkContext {
     ml: [MetaLayout; ML_SIZE as usize],
     ml_idx: MlIdx,
-    lookup : HashMap<MetaLayout, MlIdx>,
+    lookup: HashMap<MetaLayout, MlIdx>,
     limit: Node,
     pos: Layout,
     curr: [Layout],
 }
 
-fn main() {
-
-}
+fn main() {}
