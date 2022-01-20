@@ -1,6 +1,10 @@
 const std = @import("std");
 const assert = @import("std").debug.assert;
 
+const cpu_arch = @import("builtin").cpu.arch;
+//const has_avx = if (cpu_arch == .x86_64) std.Target.x86.featureSetHas(builtin.cpu.features, .avx) else false;
+const has_avx512f = if (cpu_arch == .x86_64) std.Target.x86.featureSetHas(builtin.cpu.features, .avx512f) else false;
+
 // constants
 const N: u3 = 5;
 const M: Node = (1 << N) - 1;
@@ -9,7 +13,7 @@ const MlSize = 131 + 1;
 
 // types
 const Node = bitsToType(N);
-const Layout = bitsToType(M);
+const Layout = u32; //bitsToType(M);
 const Score = u32;
 const ScoreIdx = u8;
 const Combinadic = u32;
@@ -143,6 +147,45 @@ inline fn composeLayoutVector(comptime limit: Node, name: *const [limit]Layout) 
     // result: Layout = 0;
 
     return @reduce(.Or, enns);
+}
+
+fn composeLayoutVectorAsm(comptime limit, name: *align(64) const [limit]Layout) u32 {
+    comptime assert(has_avx512f);
+
+    const len = comptime roundToAlignment(Layout, limit);
+    var zmm0: Vector(if (limit > 16) 16 else len, u32) = undefined;
+    const mask = (@as(u17, 1) << if (limit > 16) limit % 16 else limit) - 1;
+
+    if (limit <= 8) {
+        zmm0 = asm (
+            \\vmovdqa32 %[name], %[ret] {%[maskreg]} {z}
+            : [ret] "={ymm0}" (-> @TypeOf(zmm0)),
+            : [name] "m" (name),
+              [maskreg] "{k1}" (mask),
+        );
+    } else if (limit <= 16) {
+        zmm0 = asm (
+        //\\kmovw %[mask], %%k1
+            \\vmovdqa32 %[name], %[ret] {%[maskreg]} {z}
+            : [ret] "={zmm0}" (-> @TypeOf(zmm0)),
+            : [name] "m" (name),
+              //[mask] "mr" (mask),
+              [maskreg] "{k1}" (mask),
+        );
+    } else {
+        zmm0 = asm (
+            \\vmovdqa32 %[name], %%zmm1
+            \\vmovdqa32 %[uppername], %[ret] {%[maskreg]} {z}
+            \\vpord %%zmm1, %[ret], %[ret]
+            : [ret] "=v" (-> @TypeOf(zmm0)),
+            : [name] "m" (name),
+              [uppername] "m" (&name[16]),
+              [maskreg] "{k1}" (mask),
+            : "zmm1"
+        );
+    }
+
+    return @reduce(.Or, zmm0);
 }
 
 // liveness checking
