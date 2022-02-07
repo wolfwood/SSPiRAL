@@ -1,9 +1,11 @@
 const std = @import("std");
 const assert = @import("std").debug.assert;
 
-const cpu_arch = @import("builtin").cpu.arch;
+const builtin = @import("builtin");
+const cpu_arch = builtin.cpu.arch;
 //const has_avx = if (cpu_arch == .x86_64) std.Target.x86.featureSetHas(builtin.cpu.features, .avx) else false;
 const has_avx512f = if (cpu_arch == .x86_64) std.Target.x86.featureSetHas(builtin.cpu.features, .avx512f) else false;
+const has_bmi1 = if (cpu_arch == .x86_64) std.Target.x86.featureSetHas(builtin.cpu.features, .bmi1) else false;
 
 // constants
 const N: u3 = 5;
@@ -48,13 +50,23 @@ inline fn largestInLayout(l: Layout) Layout {
     return result;
 }
 
-inline fn smallestInLayout(l: Layout) Layout {
+inline fn smallestInLayoutSlow(l: Layout) Layout {
     assert(l != 0);
     var result = @as(Layout, 1) << (@ctz(Layout, l));
 
     assert(result != 0);
 
     return result;
+}
+
+inline fn smallestInLayout(l: u32) @TypeOf(l) {
+    comptime assert(has_bmi1);
+
+    return asm (
+        \\blsi %[ret], %[l]
+        : [ret] "=r" (-> @TypeOf(l)),
+        : [l] "r" (l),
+    );
 }
 
 inline fn noOp(x: anytype) @TypeOf(x) {
@@ -149,7 +161,7 @@ inline fn composeLayoutVector(comptime limit: Node, name: *const [limit]Layout) 
     return @reduce(.Or, enns);
 }
 
-fn composeLayoutVectorAsm(comptime limit, name: *align(64) const [limit]Layout) u32 {
+fn composeLayoutVectorAsm(comptime limit: Node, name: *align(64) const [limit]Layout) u32 {
     comptime assert(has_avx512f);
 
     const len = comptime roundToAlignment(Layout, limit);
