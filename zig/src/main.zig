@@ -5,7 +5,7 @@ const builtin = @import("builtin");
 const cpu_arch = builtin.cpu.arch;
 //const has_avx = if (cpu_arch == .x86_64) std.Target.x86.featureSetHas(builtin.cpu.features, .avx) else false;
 const has_avx512f = if (cpu_arch == .x86_64) std.Target.x86.featureSetHas(builtin.cpu.features, .avx512f) else false;
-const has_bmi1 = if (cpu_arch == .x86_64) std.Target.x86.featureSetHas(builtin.cpu.features, .bmi1) else false;
+const has_bmi1 = if (cpu_arch == .x86_64) std.Target.x86.featureSetHas(builtin.cpu.features, .bmi) else false;
 
 // constants
 const N: u3 = 5;
@@ -35,15 +35,15 @@ inline fn node2layout(node: Node) Layout {
 }
 
 inline fn layout2node(l: Layout) Node {
-    assert(@popCount(Layout, l) == 1);
-    return @ctz(Layout, l) + 1;
+    assert(@popCount(l) == 1);
+    return @ctz(l) + 1;
 }
 
 const bitCount = @import("std").meta.bitCount;
 
 inline fn largestInLayout(l: Layout) Layout {
     assert(l != 0);
-    var result = @as(Layout, 1) << (bitCount(Layout) - 1 - @clz(Layout, l));
+    var result = @as(Layout, 1) << (bitCount(Layout) - @as(Node, 1) - @clz(l));
 
     assert(result != 0);
 
@@ -52,14 +52,14 @@ inline fn largestInLayout(l: Layout) Layout {
 
 inline fn smallestInLayoutSlow(l: Layout) Layout {
     assert(l != 0);
-    var result = @as(Layout, 1) << (@ctz(Layout, l));
+    var result = @as(Layout, 1) << @ctz(l);
 
     assert(result != 0);
 
     return result;
 }
 
-inline fn smallestInLayout(l: u32) @TypeOf(l) {
+inline fn smallestInLayout(l: Layout) Layout {
     comptime assert(has_bmi1);
 
     return asm (
@@ -1129,7 +1129,7 @@ fn namedLayoutIteration5(
 
     while (true) {
         assert(i == limit - 1);
-        assert(@popCount(Layout, name) == limit);
+        assert(@popCount(name) == limit);
         try namedIntermediateLayoutPtrPass(limit, name, &ells, args);
 
         while ((&values[i] == ells[i]) and (i > 0)) : (i -= 1) {
@@ -1476,7 +1476,7 @@ fn testWork(name: Layout, args: *TestWorkContext) void {
 }
 
 fn testLayoutWork(comptime limit: Node, name: Layout, ells: *[limit]Layout, args: *TestWorkContext) !void {
-    assert(@popCount(Layout, name) == limit);
+    assert(@popCount(name) == limit);
     assert(name == composeLayout(limit, ells));
     assert(name < args.prev);
 
