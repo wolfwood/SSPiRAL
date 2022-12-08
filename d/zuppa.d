@@ -28,7 +28,7 @@ struct GlobalStats {
 
   static immutable score_t[M+1][M+1] coeffs;
 
-  static this(){
+  shared static this(){
     coeffs[0][0] = 1;
 
     for (uint i = 1; i <= M; ++i) {
