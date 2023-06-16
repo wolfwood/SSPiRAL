@@ -3837,7 +3837,7 @@ int main(int argc, char **argv) {
   walkOrderedNameless(N, &FirstPassWork, (void *) &arg);
 #endif
 
-  //tdestroy(arg.rootp, &noop);
+  tdestroy(arg.rootp, &noop);
 
   node_t i;
   for (i = N + 1; i <= (M / 2); ++i) {
@@ -3899,9 +3899,9 @@ int main(int argc, char **argv) {
     struct MetaLayout *temp = curr_ml;
     curr_ml = next_ml;
     next_ml = temp;
-    //memset(next_ml, 0, ML_SIZE*sizeof(struct MetaLayout));
+    memset(next_ml, 0, ML_SIZE*sizeof(struct MetaLayout));
 
-    //tdestroy(argz.rootp, &noop);
+    tdestroy(argz.rootp, &noop);
 
 #ifdef BENCH
     if (BENCH == i) {
@@ -3967,9 +3967,9 @@ int main(int argc, char **argv) {
     struct MetaLayout *temp = curr_ml;
     curr_ml = next_ml;
     next_ml = temp;
-    //memset(next_ml, 0, ML_SIZE*sizeof(struct MetaLayout));
+    memset(next_ml, 0, ML_SIZE*sizeof(struct MetaLayout));
 
-    //tdestroy(argz.rootp, &noop);
+    tdestroy(argz.rootp, &noop);
   }
 
   assert(curr_num == 1);
