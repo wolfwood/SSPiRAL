@@ -3520,7 +3520,7 @@ void sumChildLayoutScores2(
 }
 
 /* core work functions, applied with walkOrdered */
-struct FirstBlushArgs {
+struct FirstPassArgs {
   struct Layout *curr;
   layout_t pos;
   struct MetaLayout *ml;
@@ -3528,12 +3528,12 @@ struct FirstBlushArgs {
   void *rootp;
 };
 
-void FirstBlushWork(
+void FirstPassWork(
 #ifdef VERIFY
     layout_t name,
 #endif
     uint limit, node_t *Is, void *_arg) {
-  struct FirstBlushArgs *args = _arg;
+  struct FirstPassArgs *args = _arg;
 
   struct MetaLayout *next_ml = &args->ml[args->ml_idx];
 
@@ -3861,7 +3861,7 @@ int main(int argc, char **argv) {
   curr = mymap(&curr_size);
 
   /* populate first scores array, test liveness for all layouts */
-  struct FirstBlushArgs arg;
+  struct FirstPassArgs arg;
   arg.curr = curr;
   arg.pos = 0;
   arg.ml = curr_ml;
@@ -3869,9 +3869,9 @@ int main(int argc, char **argv) {
   arg.rootp = NULL;
 
 #ifdef VERIFY
-  walkOrdered(N, &FirstBlushWork, (void*)&arg);
+  walkOrdered(N, &FirstPassWork, (void*)&arg);
 #else
-  walkOrderedNameless(N, &FirstBlushWork, (void *) &arg);
+  walkOrderedNameless(N, &FirstPassWork, (void *) &arg);
 #endif
 
   //tdestroy(arg.rootp, &noop);
