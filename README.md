@@ -54,7 +54,7 @@ My Initial simulator was designed to evaluate single layouts, using a top-down e
 
 This code supported multiple copies of nodes, so through an exhaustive search of all possibilities, I was able to demonstrate that there is never a case for **N** of 2, 3, or 4 where a layout with 2 copies of the same node is more reliable than a peer layout containing an equal number of nodes, all unique.
 
-Having answered that question, it was clear that evaluating the 'complete' **M** node layout for a given **N** ought to be sufficient to build the metalayout graph, rather that invoking the simulator repeatedly each individual sublayout. In addition, I wanted to avoid liveness checks by instead checking whether a node had any live children. The resulting bottom-up approach is used by the D and C++ implementations in [](archive/). The idea behind this code can be explained by looking at the how layout scores are constructed.
+Having answered that question, it was clear that evaluating the 'complete' **M** node layout for a given **N** ought to be sufficient to build the metalayout graph, rather that invoking the simulator repeatedly each individual sublayout. In addition, I wanted to avoid liveness checks by instead checking whether a node had any live children. The resulting bottom-up approach is used by the D and C++ implementations in [archive/](archive/). The idea behind this code can be explained by looking at the how layout scores are constructed.
 
 | # Nodes | Live Layouts | Total Layouts |
 |--------:|-------------:|--------------:|
@@ -80,7 +80,7 @@ This approach can be extended for larger N, however the explosion in state space
 The wrinkle here is that if we store all the layouts, we can use an array where the index is the layout name, but if we only want to store a subset of the layouts we need a way to find child nodes when summing scores. I tried storing layouts in various sorted and unsorted maps, including trees and has tables. The overall result was the same, my code spent most of its time interacting with the map data structure. To get more improvements, I needed a better way to organize my working set.
 
 ## Current Code
-My current appoach can be found in [](c/spiral.c). I learned about [combinadic](https://en.wikipedia.org/wiki/Combinatorial_number_system) numbers, which give a way to directly map layouts with *i* nodes to the range [0, **M** choose *i*). This allows me to use a flat array to store the set of current and previous layouts. By constructing the layout iteration code to match the combinadic ordering, the array can be written in order without lookups. Some calculation is necessary to determine the combinadic indexes of a layout's children. How to do this efficiently is the primary consideration of the wide variety of experiments in this file.
+My current appoach can be found in [c/spiral.c](c/spiral.c). I learned about [combinadic](https://en.wikipedia.org/wiki/Combinatorial_number_system) numbers, which give a way to directly map layouts with *i* nodes to the range [0, **M** choose *i*). This allows me to use a flat array to store the set of current and previous layouts. By constructing the layout iteration code to match the combinadic ordering, the array can be written in order without lookups. Some calculation is necessary to determine the combinadic indexes of a layout's children. How to do this efficiently is the primary consideration of the wide variety of experiments in this file.
 
 <!--
 ## Optimization
