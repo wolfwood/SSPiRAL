@@ -3366,19 +3366,6 @@ void printScore(const void *nodep, const VISIT which, const int depth) {
   }
 }
 
-bool onlyOnce;
-struct MetaLayout *shorty;
-int sfd;
-
-void shortestScore(const void *nodep, const VISIT which, const int depth) {
-  if (leaf == which && onlyOnce) {
-    struct MetaLayout **s = (struct MetaLayout **) nodep;
-    shorty = (*s);
-
-    onlyOnce = false;
-  }
-}
-
 uint directLookup(const node_t *Is, int len, const int oddManOut) {
   uint idx = 0;
 
@@ -3823,30 +3810,6 @@ void TerminalCombinadicDeltaWork(
   ++(args->pos);
 }
 
-struct ShortyPrinterArgs {
-  struct Layout *next;
-  layout_t pos;
-  struct MetaLayout *next_ml;
-  //void* rootp;
-};
-
-void ShortyPrinterWork(
-    layout_t name,
-    uint limit, node_t *Is, void *_arg) {
-
-  struct ShortyPrinterArgs *args = _arg;
-
-  // convenient alias
-  struct Layout *next = &args->next[args->pos];
-  struct MetaLayout *next_ml = &args->next_ml[next->scoreIdx];
-
-  if (next_ml == shorty) {
-    dprintf(sfd, "%u\n", name);
-  }
-
-  ++(args->pos);
-}
-
 int main(int argc, char **argv) {
   struct Layout *curr, *next;
 
@@ -3899,7 +3862,6 @@ int main(int argc, char **argv) {
     argz.dethklok = 0;
 #endif
 
-#ifndef SKIP
 #ifdef VERIFY
     walkOrdered(i, &IntermediateZoneWork, (void*)&argz);
 #else
@@ -3908,7 +3870,6 @@ int main(int argc, char **argv) {
 #endif
 
     assert(next_num == argz.pos);
-#endif
 
 #ifdef VERIFY
     if ((M/2) == i) {
@@ -3928,31 +3889,6 @@ int main(int argc, char **argv) {
 #ifdef PRINTSCORE
     printf(" - %u\n", argz.ml_idx);
     twalk(argz.rootp, &printScore);
-#endif
-
-#ifdef SHORTIES
-    onlyOnce = true;
-    twalk(argz.rootp, &shortestScore);
-
-    char shortfilename[128];
-
-    sprintf(shortfilename, "shorties/%u/%u", N, i);
-
-    sfd = open(shortfilename, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
-
-    if(sfd < 0){
-      perror(NULL);
-    }
-
-    struct ShortyPrinterArgs ergs;
-
-    ergs.next = next;
-    ergs.next_ml = next_ml;
-    ergs.pos = 0;
-
-    walkOrdered(i, &ShortyPrinterWork, (void*)&ergs);
-
-    close(sfd);
 #endif
 
     // rotate arrays
@@ -4021,31 +3957,6 @@ int main(int argc, char **argv) {
 #ifdef PRINTSCORE
     printf(" - %u\n", argz.ml_idx);
     twalk(argz.rootp, &printScore);
-#endif
-
-#ifdef SHORTIES
-    onlyOnce = true;
-    twalk(argz.rootp, &shortestScore);
-
-    char shortfilename[128];
-
-    sprintf(shortfilename, "shorties/%u/%u", N, i);
-
-    sfd = open(shortfilename, O_WRONLY|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH);
-
-    if(sfd < 0){
-      perror(NULL);
-    }
-
-    struct ShortyPrinterArgs ergs;
-
-    ergs.next = next;
-    ergs.next_ml = next_ml;
-    ergs.pos = 0;
-
-    walkOrdered(i, &ShortyPrinterWork, (void*)&ergs);
-
-    close(sfd);
 #endif
 
     // rotate arrays
