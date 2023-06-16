@@ -49,7 +49,35 @@ For **N**=3 we see that there are two metalayouts that each contain 4 nodes. The
 
 At only **N**=4 the Metalayouts have developed a complex relationship. In addition there is a discontinuity: the most reliable (bold) Metalayouts containing 6 and 5 nodes are not in a parent &ndash; child relationship. Exploring this complexity is the purpose of this code.
 
-## historical approaches
+## Historical Approaches
+My Initial simulator was designed to evaluate single layouts, using a top-down enumeration of the potential child layouts, removing nodes one at a time and testing if the resulting layout was alive or dead. The majority of the execution time was spent in the liveness test. I reimplemented my initial recursive liveness test as iteration. I experimented with a Binary Decision Diagram based check and then finally settled on an iterative Depth First Search.
+
+This code supported multiple copies of nodes, so through an exhaustive search of all possibilities, I was able to demonstrate that there is never a case for **N** of 2, 3, or 4 where a layout with 2 copies of the same node is more reliable than a peer layout containing an equal number of nodes, all unique.
+
+Having answered that question, it was clear that evaluating the 'complete' **M** node layout for a given **N** ought to be sufficient to build the metalayout graph, rather that invoking the simulator repeatedly each individual sublayout. In addition, I wanted to avoid liveness checks by instead checking whether a node had any live children. The resulting bottom-up approach is used by the D and C++ implementations in [](archive/). The idea behind this code can be explained by looking at the how layout scores are constructed.
+
+| # Nodes | Live Layouts | Total Layouts |
+|--------:|-------------:|--------------:|
+|       2 |            1 |             3 |
+|       1 |            0 |             3 |
+|       0 |            0 |             1 |
+
+
+This table shows the score for the **N**=2 layouts {1, 2}, {1, 1⊕2}, and {2, 1⊕2}. The first column is just the array index, and the last column is **M** Choose *i*, where *i* is the index. So the score is really just the number of live layouts. We determine that each layout is alive using the liveness check code, and populate the array at index 2. Since the scores are identical, the layouts share the same metalayout.
+
+| # Nodes | Live Layouts | Total Layouts |
+|--------:|-------------:|--------------:|
+|       3 |            1 |             1 |
+|       2 |            3 |             3 |
+|       1 |            0 |             3 |
+|       0 |            0 |             1 |
+
+
+This table shows the score for the layout {1, 2, 1⊕2}. It can be constructed first by summing the scores for the child layouts, and then because at least one child is alive (the score at *i*-1 is non-zero) we can skip the liveness check and put a one at index *i*.
+
+This approach can be extended for larger N, however the explosion in state space (**N**=5 has 2^31 - 1 possible layouts) must be addressed. However, we don't need to store the scores for all layouts. As we iterate all layouts with *i* nodes, we only need storage for the layouts of size *i*, and the children of size *i - 1* for score calculation.
+
+The wrinkle here is that if we store all the layouts, we can use an array where the index is the layout name, but if we only want to store a subset of the layouts we need a way to find child nodes when summing scores. I tried storing layouts in various sorted and unsorted maps, including trees and has tables. The overall result was the same, my code spent most of its time interacting with the map data structure. To get more improvements, I needed a better way to organize my working set.
 
 ## current code
 
