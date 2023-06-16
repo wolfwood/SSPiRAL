@@ -82,6 +82,7 @@ The wrinkle here is that if we store all the layouts, we can use an array where 
 ## Current Code
 My current appoach can be found in [](c/spiral.c). I learned about [combinadic](https://en.wikipedia.org/wiki/Combinatorial_number_system) numbers, which give a way to directly map layouts with *i* nodes to the range [0, **M** choose *i*). This allows me to use a flat array to store the set of current and previous layouts. By constructing the layout iteration code to match the combinadic ordering, the array can be written in order without lookups. Some calculation is necessary to determine the combinadic indexes of a layout's children. How to do this efficiently is the primary consideration of the wide variety of experiments in this file.
 
+<!--
 ## Optimization
 
 ### theoretic
@@ -91,6 +92,7 @@ My current appoach can be found in [](c/spiral.c). I learned about [combinadic](
 ### language
 
 ### compiler
+-->
 
 ## Invariants
   * all layouts with fewer than **N** nodes are dead
