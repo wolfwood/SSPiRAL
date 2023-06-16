@@ -1,0 +1,149 @@
+digraph before {
+n0 [label="Death"]
+n1 [label="4 840" style="bold"]
+n1 -> n0 [label=<4 &#955;>]
+n2 [label="5 1680"]
+n2 -> n1
+n2 -> n0 [label=<2 &#955;>]
+n3 [label="5 840"]
+n3 -> n1
+n3 -> n0 [label=<1 &#955;>]
+n4 [label="5 168" style="bold"]
+n4 -> n1
+n1 -> n4 [style="bold" constraint=false]
+n7 [label="6 2520"]
+n7 -> n2
+n7 -> n3
+n7 -> n0 [label=<1 &#955;>]
+n6 [label="6 420" style="bold"]
+n6 -> n3
+n8 [label="6 1680"]
+n8 -> n2
+n8 -> n3
+n8 -> n4
+n5 [label="6 280"]
+n5 -> n2
+n2 -> n8 [style="bold" constraint=false]
+n3 -> n6 [style="bold" constraint=false]
+n4 -> n8 [style="bold" constraint=false]
+n13 [label="7 120" style="bold"]
+n13 -> n6
+n10 [label="7 420"]
+n10 -> n7
+n10 -> n6
+n9 [label="7 2520"]
+n9 -> n7
+n9 -> n8
+n9 -> n6
+n12 [label="7 2520"]
+n12 -> n7
+n12 -> n8
+n12 -> n5
+n11 [label="7 840"]
+n11 -> n7
+n11 -> n0 [label=<1 &#955;>]
+n7 -> n9 [style="bold" constraint=false]
+n6 -> n13 [style="bold" constraint=false]
+n8 -> n9 [style="bold" constraint=false]
+n5 -> n12 [style="bold" constraint=false]
+n14 [label="8 420"]
+n14 -> n9
+n14 -> n11
+n19 [label="8 15" style="bold"]
+n19 -> n13
+n15 [label="8 2520"]
+n15 -> n10
+n15 -> n9
+n15 -> n11
+n15 -> n12
+n17 [label="8 840"]
+n17 -> n13
+n17 -> n10
+n17 -> n9
+n18 [label="8 120"]
+n18 -> n11
+n18 -> n0 [label=<1 &#955;>]
+n16 [label="8 2520"]
+n16 -> n9
+n16 -> n12
+n13 -> n19 [style="bold" constraint=false]
+n10 -> n17 [style="bold" constraint=false]
+n9 -> n17 [style="bold" constraint=false]
+n12 -> n16 [style="bold" constraint=false]
+n11 -> n14 [style="bold" constraint=false]
+n24 [label="9 420"]
+n24 -> n18
+n24 -> n14
+n24 -> n15
+n22 [label="9 280"]
+n22 -> n16
+n21 [label="9 1680"]
+n21 -> n16
+n21 -> n15
+n20 [label="9 2520"]
+n20 -> n14
+n20 -> n16
+n20 -> n15
+n20 -> n17
+n23 [label="9 105" style="bold"]
+n23 -> n19
+n23 -> n17
+n14 -> n20 [style="bold" constraint=false]
+n19 -> n23 [style="bold" constraint=false]
+n15 -> n20 [style="bold" constraint=false]
+n17 -> n23 [style="bold" constraint=false]
+n18 -> n24 [style="bold" constraint=false]
+n16 -> n22 [style="bold" constraint=false]
+n25 [label="10 1680"]
+n25 -> n21
+n25 -> n20
+n25 -> n22
+n28 [label="10 168"]
+n28 -> n21
+n27 [label="10 840"]
+n27 -> n21
+n27 -> n20
+n27 -> n24
+n26 [label="10 315" style="bold"]
+n26 -> n20
+n26 -> n23
+n24 -> n27 [style="bold" constraint=false]
+n22 -> n25 [style="bold" constraint=false]
+n21 -> n25 [style="bold" constraint=false]
+n20 -> n26 [style="bold" constraint=false]
+n23 -> n26 [style="bold" constraint=false]
+n29 [label="11 840"]
+n29 -> n27
+n29 -> n25
+n29 -> n28
+n31 [label="11 105"]
+n31 -> n27
+n31 -> n26
+n30 [label="11 420" style="bold"]
+n30 -> n25
+n30 -> n26
+n25 -> n30 [style="bold" constraint=false]
+n28 -> n29 [style="bold" constraint=false]
+n27 -> n29 [style="bold" constraint=false]
+n26 -> n30 [style="bold" constraint=false]
+n32 [label="12 420"]
+n32 -> n31
+n32 -> n30
+n32 -> n29
+n33 [label="12 35" style="bold"]
+n33 -> n30
+n29 -> n32 [style="bold" constraint=false]
+n31 -> n32 [style="bold" constraint=false]
+n30 -> n33 [style="bold" constraint=false]
+n34 [label="13 105" style="bold"]
+n34 -> n33
+n34 -> n32
+n32 -> n34 [style="bold" constraint=false]
+n33 -> n34 [style="bold" constraint=false]
+n35 [label="14 15" style="bold"]
+n35 -> n34
+n34 -> n35 [style="bold" constraint=false]
+n35 -> n36 [style="bold" constraint=false]
+n36 [label="15 1" style="bold"]
+n36 -> n35
+}

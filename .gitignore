@@ -17,7 +17,6 @@ spiralnauty
 .gdb_history
 .idea/
 *.out
-*.dot
 *.json
 *.txt
 

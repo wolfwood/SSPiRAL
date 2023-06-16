@@ -35,7 +35,19 @@ There is a well-known class of non-optimal erasure codes known as fountain codes
 It's this idea of active reconfiguration that is both most unique about SSPiRAL and that directly drives this simulation work: the system needs to know if it's in a less reliable configuration, and needs to identify a more reliable peer layout to transition to.
 
 
-## data structures
+## Structure of the Data
+![the relationship of the Layouts for **N**=2](images/2.layouts.png "the relationship of the Layouts for N=2")
+![the *Meta*layouts for **N**=2](images/2.metalayouts.png "the graph of Metalayouts for N=2")
+
+The first graph illustrates the relationships between all possible layouts in an **N**=2 SSPiRAL code. The second graph shows the equivalent metalayouts for **N**=2. The first number in each oval is the number of data nodes in the layouts contained in the metalayout. The second number is how many layouts share the same reliability (and the same child and parent metalayouts). Here, all three layouts containing two nodes are functionally identical. However, as the number of data nodes increases the structure becomes more complex. The edge labels represent the probability of transition between metalayouts, through node failure or repair. The repair edge, μ, always has a coefficient of the number of missing nodes so I generally omit it.
+
+![the *Meta*layouts for **N**=3](images/3.png "the graph of Metalayouts for N=3")
+<!--img align="left" src="images/3.png"-->
+For **N**=3 we see that there are two metalayouts that each contain 4 nodes. The more populated one risks data loss in the case of certain node failures, while the bolded one is completely safe against single node failures.
+
+![the *Meta*layouts for **N**=4](images/4.png "the graph of Metalayouts for N=4")
+
+At only **N**=4 the Metalayouts have developed a complex relationship. In addition there is a discontinuity: the most reliable (bold) Metalayouts containing 6 and 5 nodes are not in a parent &ndash; child relationship. Exploring this complexity is the purpose of this code.
 
 ## historical approaches
 

@@ -1,0 +1,11 @@
+digraph layouts {
+      n0 [label="Data Loss"]
+      n3 [label="{1, 2}"]
+      n5 [label="{1, 1&#x2295;2}"]
+      n6 [label="{2, 1&#x2295;2}"]
+      n7 [label="{1, 2, 1&#x2295;2}"]
+      rank=same; n3; n5; n6;
+      n7 -> {n3 n5 n6}
+      {n3 n5 n6} -> n7 [style="bold" constraint=false]
+      {n3 n5 n6} -> n0
+}

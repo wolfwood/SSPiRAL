@@ -1,0 +1,8 @@
+digraph metalayouts {
+      n0 [label="Data Loss"]
+      n3 [label="3 1" style="bold"]
+      n2 [label="2 3" style="bold"]
+      n3 -> n2 [label="3 &#955;"]
+      n2 -> n3 [label="1 &#x03bc;" style="bold" constraint=false]
+      n2 -> n0 [label="2 &#955;"]
+}
