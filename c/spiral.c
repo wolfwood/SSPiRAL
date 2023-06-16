@@ -131,7 +131,7 @@ void *mymap(uint64_t *size) {
     mmap_flags |= MAP_HUGETLB|MAP_HUGE_2MB;
   }
 
-  //|MAP_HUGETLB|MAP_HUGE_2MB - adjust length for mummap to page alignment
+  // XXX - adjust length for mummap to page alignment
   void *temp = mmap(NULL, *size, PROT_WRITE, mmap_flags, -1, 0);
 #endif
 
@@ -958,7 +958,7 @@ void walkCombinadically2(const uint limit,
   }
 }
 
-// an attempt to push the before an after array stores down in to loop from the kernel. didn't pan out in this form
+// an attempt to push the before and after array stores down in to loop from the kernel. didn't pan out in this form
 void walkCombinadically1(const uint limit,
                          void(*func)(uint limit, score_t idx, score_t *beforeCoeffs, score_t *afterCoeffs, void *arg),
                          void *arg) {
@@ -1017,8 +1017,8 @@ void walkCombinadically1(const uint limit,
 }
 
 
-/*  Terminal Work -- layouts with greater than M/2 nodes which are guaranteed to be alive, does not require deadness checking,
- *   but still dominates the computation.  The primary work in this case is simply looking up the children of a layout, to sum
+/*  Terminal Work -- layouts with greater than M/2 nodes which are guaranteed to be alive, do not require deadness checking,
+ *   but still dominate the computation.  The primary work in this case is simply looking up the children of a layout, to sum
  *   their reliability scores. Initially finding children was done by masking out bits in the name to compute child names and
  *   hashing or searching the prev array for them. however, it is more space and time efficient to directly compute child positions
  *   using combinadic numbers, which give a predictable ordering.  initially the lambda did this work per-layout but there is reusable
@@ -3610,7 +3610,7 @@ void IntermediateZoneWork(
     next_ml->scores[limit - N] = 0;
   }
 
-  // normalize - wtf is this even? - overcounting but I forget why
+  // normalization is better pushed to the end, after dedup (as long as you don't overflow the comunters). just do lookups with raw values to save time
 #ifdef OLDNORMALIZE
   for (int j = 2; j <= (limit - N); ++j) {
     assert(0 == next_ml->scores[(limit - N) - j] % j);
@@ -3673,7 +3673,6 @@ void IntermediateZoneDeltaWork(
     next_ml->scores[limit - N] = 0;
   }
 
-  // normalize - wtf is this even? - overcounting but I forget why
 #ifdef OLDNORMALIZE
   for (int j = 2; j <= (limit - N); ++j) {
     assert(0 == next_ml->scores[(limit - N) - j] % j);
@@ -3716,7 +3715,6 @@ void TerminalWork(
       args->curr, args->layoutsInCurr, args->curr_ml, Is, limit, next_ml, SCORE_SIZE);
 
 
-  // normalize - wtf is this even? - overcounting but I forget why
 #ifdef OLDNORMALIZE
   for (int j = 0; j < SCORE_SIZE; ++j) {
     uint adjustment = limit - (M/2);
@@ -3760,7 +3758,6 @@ void TerminalCombinadicWork(
       args->curr, args->layoutsInCurr, args->curr_ml, idx, beforeCoefs, afterCoefs, limit - 1, next_ml, SCORE_SIZE);
 
 
-  // normalize - wtf is this even? - overcounting but I forget why
 #ifdef OLDNORMALIZE
   for (int j = 0; j < SCORE_SIZE; ++j) {
     uint adjustment = limit - (M/2);
@@ -3804,7 +3801,6 @@ void TerminalCombinadicDeltaWork(
       args->curr, args->layoutsInCurr, args->curr_ml, idx, deltaCoefs, limit - 1, next_ml, SCORE_SIZE);
 
 
-  // normalize - wtf is this even? - overcounting but I forget why
 #ifdef OLDNORMALIZE
   for (int j = 0; j < SCORE_SIZE; ++j) {
     uint adjustment = limit - (M/2);
