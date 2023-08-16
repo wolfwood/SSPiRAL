@@ -6,7 +6,7 @@ Secondary outputs may include dot diagrams of Markov chains, which describe the 
 
 The original purpose of this code was the exploration of behavior of the SSPiRAL erasure code. However, the challenge of writing efficient code to enumerate and categorize the failure scenarios has also been useful for my growth as a programmer, and has provided an opportunity to explore both optimization strategies at various levels and the affordances of various programming languages.
 
-The collection of the most recent simulators resembles [The Compute Language Benchmark Game](https://benchmarksgame-team.pages.debian.net/benchmarksgame/index.html), as it pits similar algorithms against each other in C, D, Zig (Rust is in progress). These simulators currently do not produce the secondary outputs as these are of negligible computational complexity. The correct primary output (for several values of N) is sufficient to verify correctness of the implementation.
+The collection of the most recent simulators resembles [The Computer Language Benchmark Game](https://benchmarksgame-team.pages.debian.net/benchmarksgame/index.html), as it pits similar algorithms against each other in C, D, Zig (Rust is in progress). These simulators currently do not produce the secondary outputs as these are of negligible computational complexity. The correct primary output (for several values of N) is sufficient to verify correctness of the implementation.
 
 
 ## A Brief Vocabulary
