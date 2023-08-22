@@ -21,7 +21,7 @@ The collection of the most recent simulators resembles [The Computer Language Be
  * Layout naming: layouts can also be named and represented as a bitmap of the constituent node names. The layout 13 contains nodes 1, encoded as 2<sup>1-1</sup> = 1; 3 encoded as 2<sup>3-1</sup> = 4; and 4 encoded as 2<sup>4-1</sup> = 8. While this compact form is useful for computation, for human readability I will use set notation instead: {1, 3, 4} or {1, 1⊕2, 4}.
  * Child/Parent Layout: there is a relationship between layouts that differ by the addition or removal of a single node. {1, 1⊕2}, {1, 4}, and {1⊕2, 4} are all children of {1, 1⊕2, 4}, as the are the possible results of a node failure. {1, 1⊕2, 4, 2⊕4} is a parent of {1, 1⊕2, 4}, produced by a node repair or addition. The relationship is transitive, so {1} is a descendant of {1, 1⊕2, 4, 2⊕4}.
  * Dead/Alive Layout: a 'dead' layout has suffered unrecoverable data loss; a layout that is 'alive' can recover all the original data. While we may need to know **N** to be sure in some cases, we can infer for layout {1, 4} that **N** is at least 3, and therefore this layout is dead because it only has 2 nodes.
- * Score: an expession of the reliability of a layout. Conceptually it is an array indexed by the number of node losses, and storing the number of live decendant layouts. In the simulators several optimizations are applied to reduce array length ([see Invariants](#invariants)), dead descendants are counted instead which allows a int type to be used, and the arrays are indexed in reverse order to facilitate construction of parents from children.
+ * Score: an expession of the reliability of a layout. Conceptually it is an array indexed by the number of node losses, and storing the number of live descendant layouts. In the simulators several optimizations are applied to reduce array length ([see Invariants](#invariants)), dead descendants are counted instead which allows a int type to be used, and the arrays are indexed in reverse order to facilitate construction of parents from children.
  * Meta Layout: if N = 4, the layouts {1, 2, 1⊕2, 1⊕4} and {1, 2, 1⊕2, 2⊕4} are both 'alive' because they can recover data node 4 using the parity, in once case XORing it with node 1, in the other node 2. If we chose to relabel data nodes 1 and 2 as 2 and 1 for one layout, it would become identical to the other. These layouts are effectively the same, in terms of both their scores and the scores of there potential child and parent layouts. A meta layout is collection of layouts that are functionally equivalent in terms of reliability, and whose parents and children all fall within the same sets of metalayouts as well. Not all the layouts in a meta layout are simple relabelings of each other, either. Studying this hidden structure is what drove me to create the subsequent versions of my initial simulator.
  * Degree: the number of data nodes combined to form a parity node. AKA cardinality, XORder.
 
@@ -47,7 +47,7 @@ For **N**=3 we see that there are two metalayouts that each contain 4 nodes. The
 
 ![the *Meta*layouts for **N**=4](images/4.png "the graph of Metalayouts for N=4")
 
-At only **N**=4 the Metalayouts have developed a complex relationship. In addition there is a discontinuity: the most reliable (bold) Metalayouts containing 6 and 5 nodes are not in a parent &ndash; child relationship. Exploring this complexity is the purpose of this code.
+At only **N**=4 the metalayouts have developed a complex relationship. In addition there is a discontinuity: the most reliable (bold) metalayouts containing 6 and 5 nodes are not in a parent &ndash; child relationship. Exploring this complexity is the purpose of this code.
 
 ## Historical Approaches
 My Initial simulator was designed to evaluate single layouts, using a top-down enumeration of the potential child layouts, removing nodes one at a time and testing if the resulting layout was alive or dead. The majority of the execution time was spent in the liveness test. I reimplemented my initial recursive liveness test as iteration. I experimented with a Binary Decision Diagram based check and then finally settled on an iterative Depth First Search.
@@ -96,7 +96,7 @@ My current appoach can be found in [c/spiral.c](c/spiral.c). I learned about [co
 
 ## Invariants
   * all layouts with fewer than **N** nodes are dead
-  * all layouts with > (**M** + 1) / 2 nodes are alive
+  * all layouts with >= (**M** + 1) / 2 nodes are alive
   * any layout that can recover a given data node can do so by XORing at most **N** nodes
 
 
