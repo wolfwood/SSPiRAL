@@ -80,7 +80,22 @@ This approach can be extended for larger N, however the explosion in state space
 The wrinkle here is that if we store all the layouts' scores, we can use an array where the index is the layout name, but if we only want to store a subset of the layouts we need a way to find child nodes when summing scores. I tried storing layouts in various sorted and unsorted maps, including trees and has tables. The overall result was the same, my code spent most of its time interacting with the map data structure. To get more improvements, I needed a better way to organize my working set.
 
 ## Current Code
-My current appoach can be found in [c/spiral.c](c/spiral.c). I learned about [combinadic](https://en.wikipedia.org/wiki/Combinatorial_number_system) numbers, which give a way to directly map layouts with *i* nodes to the range [0, **M** choose *i*). This allows me to use a flat array to store the set of current and previous layouts. By constructing the layout iteration code to match the combinadic ordering, the array can be written in order without lookups. Some calculation is necessary to determine the combinadic indexes of a layout's children. How to do this efficiently is the primary consideration of the wide variety of experiments in this file.
+When searching for a solution, I discovered [combinadic](https://en.wikipedia.org/wiki/Combinatorial_number_system) numbers, which provide a way to directly map layouts with *i* nodes to the range [0, **M** choose *i*). This allows me to use two flat arrays to store both the set of current and previous layouts. By constructing the layout iteration code to match the combinadic ordering, the array can be written in order. Some calculation is necessary to determine the combinadic indexes of a layout's children.
+
+The current approach has three main phases. The first pass iterates all layouts of N nodes, performs a liveness check, and records a score of 1 or 0 depending on the outcome.
+
+The second, "intermediate" phase applies to layouts of less than *(**M** + 1) / 2* nodes. As this pass iterates, for each layout it must iterate the child layouts in order to sum their scores into a temporary array, and if there are no survivors it must perform a liveness check. Finally, the temporary score is looked up in a collection mapping each unique score to an array index.
+
+If its unique, a new index is assigned, otherwise we record the result of the lookup and reuse the temporary. Because there are relatively few metalayouts, we can store a one byte index (for **N** <= 5) in place of an array of *(**M**+1) / 2 - **N** = 11* ints that are four bytes in size. This indirection, along with only allocating memory for the current pass and its immediate children, as discussed previously, allows all of the nearly 2 Gig layouts for **N** = 5 to be evaluated while using a maximum of less than 600 MB.
+
+In the third and final or "terminal" phase, all layouts are alive and so the liveness check is superfluous. However, the iterating and summing of children still applies.
+
+As a final detail, at the end of every pass except the first we must also normalize the unique scores. This mitigates overcounting. For example, a layout gets the liveness of a grandchild twice. If the grandparent is {1, 2, 4, 1⊕2, 2⊕4} and the grandchild is {1, 2, 4}, then both child layouts {1, 2, 4, 1⊕2} and {1, 2, 4, 2⊕4} contain the liveness of {1, 2, 4} in their own scores, and so it is counted twice in the grandparents score prior to normalization. All that is needed is a scan over the small number of score values, dividing by the number of generations distant they are. Normalization does not make a significant contribution to runtime.
+
+The most significant work that cannot be eliminated in the current algorithm is the iteration, the liveness checking and the summing of scores. But we can control how we iterate layouts and in what form we communicate the identity of a layout to the liveness test and child iteration code. We can save quite a bit of time by avoiding representation transformations between the iterator and the Real Work, and also between iterations, which often differ by a single node. How to do this most effectively is the primary consideration of the wide variety of experiments in [c/spiral.c](c/spiral.c). The [D implementation](d/zuppa.d) is a snapshot of this algorithm prior to my most of the intense optimizations in this vein.
+
+I will add discussion of this later, however the [Zig implementation](zig/src/main.zig) calls in to question the need for some of these optimizations.
+
 
 <!--
 ## Optimization
