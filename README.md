@@ -99,10 +99,13 @@ I will add discussion of this later, however the [Zig implementation](zig/src/ma
 
 <!--
 ## Optimization
+These approaches are ordered by my estimation of how powerful they might be, but not necessarily by how successful I've been with them so far.
 
 ### theoretic
 
 ### algorithmic
+
+### implementation
 
 ### language
 
