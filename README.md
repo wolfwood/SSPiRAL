@@ -49,6 +49,11 @@ For **N**=3 we see that there are two metalayouts that each contain 4 nodes. The
 
 At only **N**=4 the metalayouts have developed a complex relationship. In addition there is a discontinuity: the most reliable (bold) metalayouts containing 6 and 5 nodes are not in a parent &ndash; child relationship. Exploring this complexity is the purpose of this code.
 
+## Invariants
+  * all layouts with fewer than **N** nodes are dead
+  * all layouts with >= (**M** + 1) / 2 nodes are alive
+  * any layout that can recover a given data node can do so by XORing at most **N** nodes
+
 ## Historical Approaches
 My Initial simulator was designed to evaluate single layouts, using a top-down enumeration of the potential child layouts, removing nodes one at a time and testing if the resulting layout was alive or dead. The majority of the execution time was spent in the liveness test. I reimplemented my initial recursive liveness test as iteration. I experimented with a Binary Decision Diagram based check and then finally settled on an iterative Depth First Search.
 
@@ -111,11 +116,6 @@ These approaches are ordered by my estimation of how powerful they might be, but
 
 ### compiler
 -->
-
-## Invariants
-  * all layouts with fewer than **N** nodes are dead
-  * all layouts with >= (**M** + 1) / 2 nodes are alive
-  * any layout that can recover a given data node can do so by XORing at most **N** nodes
 
 
 ## Notes on Organization
