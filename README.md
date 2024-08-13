@@ -8,6 +8,10 @@ The original purpose of this code was the exploration of behavior of the SSPiRAL
 
 The collection of the most recent simulators resembles [The Computer Language Benchmark Game](https://benchmarksgame-team.pages.debian.net/benchmarksgame/index.html), as it pits similar algorithms against each other in C, D, Zig (Rust is in progress). These simulators currently do not produce the secondary outputs as these are of negligible computational complexity. The correct primary output (for several values of N) is sufficient to verify correctness of the implementation.
 
+### Acknowledgements
+
+SSPiRAL began as a project by Vince Ciotola for Ahmed Amer's Advanced Systems Software class. I participated first as the TA for that class and we continued to collaborate under Dr. Amer's supervision as we tried to characterize its reliability. Jehan-François Pâris introduced me to the approach of using Markov chains and Kolmogorov equations to solve for MTTDL.
+
 
 ## A Brief Vocabulary
 
