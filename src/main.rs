@@ -78,7 +78,7 @@ impl Nauty {
                 &mut self.options,
                 &mut self.stats,
                 o as c_int,
-                M as c_int,
+                M,
                 std::ptr::null_mut(),
             );
         }
@@ -88,7 +88,7 @@ impl Nauty {
         if true {
             print!("[");
             for &l in self.lab.iter() {
-                print!("{} ", revert(l.try_into().unwrap()));
+                print!("{} ", revert(l));
             }
             println!("]");
 
