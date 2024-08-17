@@ -14,7 +14,7 @@ type Score = u32;
 type MlIdx = u8;
 
 const N: NodeData = 5;
-const M: NodeData = 31; //2_u8.pow(N.into())  - 1;
+const M: NodeData = 2_u8.pow(N as u32)  - 1;
 const SCORE_SIZE: Score = (((M as Score) + 1) / 2) - (N as Score);
 const ML_SIZE: Score = 131 + 1;
 
