@@ -137,36 +137,35 @@ fn smallest_in_layout(l: Layout) -> Layout {
     Layout(l.blsi())
 }
 
-
-//liveness
-
+// liveness
 fn check_if_alive(name: Layout) -> bool {
-    fn recurse_check(name: Layout, n: Node, i: Node, depth: NodeData) -> bool{
-	let Node(i) = i;
+    fn recurse_check(name: Layout, n: Node, i: Node, depth: NodeData) -> bool {
+        let Node(i) = i;
 
-	for i in (1..=i).rev(){
-	    if Layout::from(Node(i)).0 & name.0  != 0 {
-		let temp = Node(i ^ n.0);
+        for i in (1..=i).rev() {
+            if Layout::from(Node(i)).0 & name.0 != 0 {
+                let temp = Node(i ^ n.0);
 
-		if temp == Node(0) || (depth > 0 && recurse_check(name, temp, Node(i-1), depth - 1)){
-		    return true;
-		}
-	    }
-	}
+                if temp == Node(0)
+                    || (depth > 0 && recurse_check(name, temp, Node(i - 1), depth - 1))
+                {
+                    return true;
+                }
+            }
+        }
 
-	false
+        false
     }
 
-    for n in (1..=((1 as NodeData) << (N -1))).rev() {
-	let n = Node(n);
-	let l = Layout::from(n);
+    for n in (1..=((1 as NodeData) << (N - 1))).rev() {
+        let n = Node(n);
+        let l = Layout::from(n);
 
-	if l.0 & name.0 != 0 {
-	    if !recurse_check(name, n, Node(M), M) {
-		return false;
-	    }
-	}
-
+        if l.0 & name.0 != 0 {
+            if !recurse_check(name, n, Node(M), M) {
+                return false;
+            }
+        }
     }
 
     true
