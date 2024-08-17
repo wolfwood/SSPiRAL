@@ -20,7 +20,10 @@ spiralnauty
 *.json
 *.txt
 
-zig-cache/
+Cargo.lock
+target/
+
+.zig-cache/
 zig-out/
 .zigmod/
 zigmod.lock
