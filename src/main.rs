@@ -18,10 +18,10 @@ fn revert(node: Node) -> Node {
 }
 
 struct Nauty {
-    g: Vec<graph>,
-    lab: Vec<c_int>,
-    ptn: Vec<c_int>,
-    orbits: Vec<c_int>,
+    g: [graph; M as usize],
+    lab: [c_int; M as usize],
+    ptn: [c_int; M as usize],
+    orbits: [c_int; M as usize],
     options: optionblk,
     stats: statsblk,
 }
@@ -40,10 +40,10 @@ impl Nauty {
         }
 
         Nauty {
-            g: Nauty::full_graph(),
-            lab: vec![0 as c_int; M as usize],
-            ptn: vec![0 as c_int; M as usize],
-            orbits: vec![0 as c_int; M as usize],
+            g: Nauty::full_graph().try_into().unwrap(),
+            lab: [0 as c_int; M as usize],
+            ptn: [0 as c_int; M as usize],
+            orbits: [0 as c_int; M as usize],
             options: optionblk::default(),
             stats: statsblk::default(),
         }
