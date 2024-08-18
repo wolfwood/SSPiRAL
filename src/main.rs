@@ -125,7 +125,8 @@ fn main() {
     nau.options.defaultptn = 0;
 
     let mut x = 0;
-    for i in nau.orbits.clone() {
+    // implicit copy of orbits
+    for i in nau.orbits {
         if i >= x {
             x = i + 1;
 
