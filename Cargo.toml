@@ -7,3 +7,10 @@ edition = "2021"
 
 [dependencies]
 nauty-Traces-sys = { version = "0.7.0", features = ["native"] }
+
+[dev-dependencies]
+criterion = "0.5.1"
+
+[[bench]]
+name = "orbits"
+harness = false
