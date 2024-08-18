@@ -1,7 +1,7 @@
 #![allow(unused_variables)]
 #![allow(dead_code)]
 
-use bitintr::Blsi;
+use bitintr::{Blsi, Popcnt};
 use std::collections::HashMap;
 
 type NodeData = u8;
@@ -9,7 +9,7 @@ type NodeData = u8;
 struct Node(NodeData);
 type LayoutData = u32;
 #[derive(Clone, Copy, PartialEq, PartialOrd, Debug, Default)]
-struct Layout(LayoutData);
+pub struct Layout(LayoutData);
 type Score = u32;
 type MlIdx = u8;
 
@@ -49,6 +49,51 @@ impl Coeffs {
     fn coeffs(&self, x: usize, y: usize) -> Score {
         //self.co[x*usize::from(M +1) + y]
         self.co[x][y]
+    }
+}
+
+// for tests and benchmarks
+pub struct LayoutIter(Layout);
+
+impl LayoutIter {
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
+
+impl Default for LayoutIter {
+    fn default() -> Self {
+        Self(Layout(
+            LayoutData::max_value() >> (LayoutData::BITS - M as LayoutData),
+        ))
+    }
+}
+
+impl Iterator for LayoutIter {
+    type Item = Layout;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.0 .0 == 0 {
+            return None;
+        }
+
+        let curr = self.0;
+
+        loop {
+            self.0 .0 -= 1;
+            if self.0 .0.popcnt() >= N as LayoutData || self.0 .0 == 0 {
+                break;
+            }
+        }
+
+        Some(curr)
+    }
+}
+
+use std::fmt;
+impl fmt::Display for Layout {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:X}", self.0)
     }
 }
 
@@ -138,7 +183,7 @@ fn smallest_in_layout(l: Layout) -> Layout {
 }
 
 // liveness
-fn check_if_alive(name: Layout) -> bool {
+pub fn check_if_alive(name: Layout) -> bool {
     fn recurse_check(name: Layout, n: Node, i: Node, depth: NodeData) -> bool {
         let Node(i) = i;
 
