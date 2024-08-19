@@ -40,13 +40,14 @@ pub struct Nauty<const M: ConstT> {
 }
 
 impl<const M: ConstT> Nauty<M> {
-    pub fn new() -> Nauty<M> {
-        let o = SETWORDSNEEDED(M);
+    // SETWORDSNEEDED(m) is nonconst so do it ourselves
+    const WORDS: usize = M / WORDSIZE as usize + if M % WORDSIZE as usize == 0 { 0 } else { 1 };
 
+    pub fn new() -> Nauty<M> {
         unsafe {
             nauty_check(
                 WORDSIZE as c_int,
-                o as c_int,
+                Self::WORDS as c_int,
                 M as c_int,
                 NAUTYVERSIONID as c_int,
             );
@@ -63,9 +64,7 @@ impl<const M: ConstT> Nauty<M> {
     }
 
     fn full_graph() -> Vec<graph> {
-        let o = SETWORDSNEEDED(M);
-
-        let mut g = empty_graph(o, M);
+        let mut g = empty_graph(Self::WORDS, M);
 
         // this will be a const when we have generic_const_exprs
         #[allow(non_snake_case)]
@@ -75,7 +74,12 @@ impl<const M: ConstT> Nauty<M> {
             let v = 1 << (i - 1);
             for u in (v + 1)..=M as Node {
                 if (v) & (u) == (v) {
-                    ADDONEEDGE(&mut g, invert::<M>(v) as usize, invert::<M>(u) as usize, o);
+                    ADDONEEDGE(
+                        &mut g,
+                        invert::<M>(v) as usize,
+                        invert::<M>(u) as usize,
+                        Self::WORDS,
+                    );
                     //println!("{} -> {}", v, u);
                 }
             }
@@ -85,8 +89,6 @@ impl<const M: ConstT> Nauty<M> {
     }
 
     pub fn compute(&mut self) {
-        let o = SETWORDSNEEDED(M);
-
         unsafe {
             densenauty(
                 self.g.as_mut_ptr(),
@@ -95,7 +97,7 @@ impl<const M: ConstT> Nauty<M> {
                 self.orbits.as_mut_ptr(),
                 &mut self.options,
                 &mut self.stats,
-                o as c_int,
+                Self::WORDS as c_int,
                 M as c_int,
                 std::ptr::null_mut(),
             );
@@ -144,5 +146,12 @@ mod tests {
         for i in 1..=M as Node {
             assert_eq!(i, revert::<M>(invert::<M>(i)))
         }
+    }
+
+    #[test]
+    fn test_words() {
+        seq_macro::seq!(N in 1..=31 {
+            assert_eq!(SETWORDSNEEDED(NtoM::<N>()), Nauty::<{NtoM::<N>()}>::WORDS);
+        });
     }
 }
