@@ -2,7 +2,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use nautust::*;
 
 fn single_benchmark(c: &mut Criterion) {
-    let mut nau = Nauty::new();
+    let mut nau = Nauty::<{ NtoM::<3>() }>::new();
 
     c.bench_function("compute orbits", |b| b.iter(|| nau.compute()));
 }

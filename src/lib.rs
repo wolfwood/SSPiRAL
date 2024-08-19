@@ -2,38 +2,46 @@ use nauty_Traces_sys::*;
 use std::io::{self, Write};
 use std::os::raw::c_int;
 
-type Node = i32;
-type ConstT = i32;
+// this is the type required by Nauty vertices
+pub type Node = i32;
+// M must be a usize to set array bounds until generic_const_exprs stabilizes
+// we'll have to downcast to Node in places instead of upcasting to usize
+pub type ConstT = usize;
 
-const fn n2m(n: ConstT) -> ConstT {
-    2_i32.pow(n as u32) - 1
+// we don't define N and M in the library but callers need at least one, which can generate the other
+// having the type of N and M be different helps prevent mistakes
+#[allow(non_snake_case)]
+pub const fn NtoM<const N: Node>() -> ConstT {
+    2_usize.pow(N as u32) - 1
 }
 
-const N: ConstT = 3;
-const M: ConstT = n2m(N);
+#[allow(non_snake_case)]
+pub const fn MtoN<const M: ConstT>() -> Node {
+    M.count_ones() as Node
+}
 
-pub fn invert(node: Node) -> Node {
-    !node & M
+pub fn invert<const M: ConstT>(node: Node) -> Node {
+    !node & M as Node
     //node -1
 }
 
-pub fn revert(node: Node) -> Node {
-    !node & M
+pub fn revert<const M: ConstT>(node: Node) -> Node {
+    !node & M as Node
     //node + 1
 }
 
-pub struct Nauty {
-    g: [graph; M as usize],
-    pub lab: [c_int; M as usize],
-    pub ptn: [c_int; M as usize],
-    pub orbits: [c_int; M as usize],
+pub struct Nauty<const M: ConstT> {
+    g: [graph; M],
+    pub lab: [c_int; M],
+    pub ptn: [c_int; M],
+    pub orbits: [c_int; M],
     pub options: optionblk,
     pub stats: statsblk,
 }
 
-impl Nauty {
-    pub fn new() -> Nauty {
-        let o = SETWORDSNEEDED(M as usize);
+impl<const M: ConstT> Nauty<M> {
+    pub fn new() -> Nauty<M> {
+        let o = SETWORDSNEEDED(M);
 
         unsafe {
             nauty_check(
@@ -45,25 +53,29 @@ impl Nauty {
         }
 
         Nauty {
-            g: Nauty::full_graph().try_into().unwrap(),
-            lab: [0 as c_int; M as usize],
-            ptn: [0 as c_int; M as usize],
-            orbits: [0 as c_int; M as usize],
+            g: Nauty::<M>::full_graph().try_into().unwrap(),
+            lab: [0 as c_int; M],
+            ptn: [0 as c_int; M],
+            orbits: [0 as c_int; M],
             options: optionblk::default(),
             stats: statsblk::default(),
         }
     }
 
     fn full_graph() -> Vec<graph> {
-        let o = SETWORDSNEEDED(M as usize);
+        let o = SETWORDSNEEDED(M);
 
-        let mut g = empty_graph(o, M as usize);
+        let mut g = empty_graph(o, M);
+
+        // this will be a const when we have generic_const_exprs
+        #[allow(non_snake_case)]
+        let N = MtoN::<M>();
 
         for i in 1..=N {
             let v = 1 << (i - 1);
-            for u in (v + 1)..=M {
+            for u in (v + 1)..=M as Node {
                 if (v) & (u) == (v) {
-                    ADDONEEDGE(&mut g, invert(v) as usize, invert(u) as usize, o);
+                    ADDONEEDGE(&mut g, invert::<M>(v) as usize, invert::<M>(u) as usize, o);
                     //println!("{} -> {}", v, u);
                 }
             }
@@ -73,7 +85,8 @@ impl Nauty {
     }
 
     pub fn compute(&mut self) {
-        let o = SETWORDSNEEDED(M as usize);
+        let o = SETWORDSNEEDED(M);
+
         unsafe {
             densenauty(
                 self.g.as_mut_ptr(),
@@ -83,7 +96,7 @@ impl Nauty {
                 &mut self.options,
                 &mut self.stats,
                 o as c_int,
-                M,
+                M as c_int,
                 std::ptr::null_mut(),
             );
         }
@@ -93,7 +106,7 @@ impl Nauty {
         if true {
             print!("[");
             for &l in self.lab.iter() {
-                print!("{} ", revert(l));
+                print!("{} ", revert::<M>(l));
             }
             println!("]");
 
@@ -106,7 +119,7 @@ impl Nauty {
 
         print!("[");
         for &orbit in self.orbits.iter() {
-            print!("{} ", revert(orbit));
+            print!("{} ", revert::<M>(orbit));
         }
         println!("]");
 
@@ -126,8 +139,10 @@ mod tests {
 
     #[test]
     fn test_invert_revert() {
-        for i in 1..=M {
-            assert_eq!(i, revert(invert(i)))
+        const M: ConstT = NtoM::<5>();
+
+        for i in 1..=M as Node {
+            assert_eq!(i, revert::<M>(invert::<M>(i)))
         }
     }
 }

@@ -1,7 +1,10 @@
 use nautust::*;
 
+const N: Node = 3;
+const M: ConstT = NtoM::<N>();
+
 fn main() {
-    let mut nau = Nauty::new();
+    let mut nau = Nauty::<M>::new();
 
     nau.compute();
 
@@ -21,9 +24,9 @@ fn main() {
 
             nau.lab[0] = i;
 
-            let bet = revert(i);
+            let bet = revert::<M>(i);
             for j in 1..=nau.lab.len() {
-                let k = invert(j as i32);
+                let k = invert::<M>(j as i32);
 
                 match (j as i32).cmp(&bet) {
                     std::cmp::Ordering::Less => nau.lab[j] = k,
