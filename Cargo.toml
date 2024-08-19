@@ -10,6 +10,7 @@ nauty-Traces-sys = { version = "0.7.0", features = ["native"] }
 
 [dev-dependencies]
 criterion = "0.5.1"
+seq-macro = "0.3.5"
 
 [[bench]]
 name = "orbits"

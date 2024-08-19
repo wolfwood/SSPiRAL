@@ -1,10 +1,17 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion};
 use nautust::*;
+use seq_macro;
 
 fn single_benchmark(c: &mut Criterion) {
-    let mut nau = Nauty::<{ NtoM::<3>() }>::new();
+    let mut group = c.benchmark_group("compute orbits");
 
-    c.bench_function("compute orbits", |b| b.iter(|| nau.compute()));
+    seq_macro::seq!(N in 3..=6 {
+        let mut nau = Nauty::<{ NtoM::<N>() }>::new();
+
+        group.bench_function(BenchmarkId::from_parameter(N), |b| {
+            b.iter(|| nau.compute())
+        });
+    });
 }
 
 criterion_group!(benches, single_benchmark,);
