@@ -28,13 +28,13 @@ pub struct Nauty {
 
 impl Nauty {
     pub fn new() -> Nauty {
-        let o = SETWORDSNEEDED(N as usize);
+        let o = SETWORDSNEEDED(M as usize);
 
         unsafe {
             nauty_check(
                 WORDSIZE as c_int,
                 o as c_int,
-                N as c_int,
+                M as c_int,
                 NAUTYVERSIONID as c_int,
             );
         }
@@ -50,7 +50,7 @@ impl Nauty {
     }
 
     fn full_graph() -> Vec<graph> {
-        let o = SETWORDSNEEDED(N as usize);
+        let o = SETWORDSNEEDED(M as usize);
 
         let mut g = empty_graph(o, M as usize);
 
@@ -68,7 +68,7 @@ impl Nauty {
     }
 
     pub fn compute(&mut self) {
-        let o = SETWORDSNEEDED(N as usize);
+        let o = SETWORDSNEEDED(M as usize);
         unsafe {
             densenauty(
                 self.g.as_mut_ptr(),
