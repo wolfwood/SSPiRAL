@@ -3,9 +3,14 @@ use std::io::{self, Write};
 use std::os::raw::c_int;
 
 type Node = i32;
+type ConstT = i32;
 
-const N: i8 = 3;
-const M: Node = 2_i32.pow(N as u32) - 1;
+const fn n2m(n: ConstT) -> ConstT {
+    2_i32.pow(n as u32) - 1
+}
+
+const N: ConstT = 3;
+const M: ConstT = n2m(N);
 
 pub fn invert(node: Node) -> Node {
     !node & M
