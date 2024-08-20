@@ -33,11 +33,11 @@ pub fn revert<const M: ConstT>(node: Node) -> Node {
 
 pub struct Nauty<const M: ConstT> {
     g: [graph; M],
-    pub lab: [c_int; M],
-    pub ptn: [c_int; M],
-    pub orbits: [c_int; M],
-    pub options: optionblk,
-    pub stats: statsblk,
+    lab: [c_int; M],
+    ptn: [c_int; M],
+    orbits: [c_int; M],
+    options: optionblk,
+    stats: statsblk,
 }
 
 impl<const M: ConstT> Nauty<M> {
