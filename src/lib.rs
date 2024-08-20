@@ -1,4 +1,5 @@
 use nauty_Traces_sys::*;
+use std::collections::HashSet;
 use std::io::{self, Write};
 use std::os::raw::c_int;
 
@@ -132,6 +133,38 @@ impl<const M: ConstT> Nauty<M> {
             writegroupsize(stderr, self.stats.grpsize1, self.stats.grpsize2);
         }
         println!();
+    }
+
+    pub fn recurse(&mut self) {
+        self.options.defaultptn = 0;
+
+        self.ptn.fill(1);
+        *self.ptn.last_mut().unwrap() = 0;
+
+        self._recurse(0);
+    }
+
+    fn _recurse(&mut self, prev: usize) {
+        self.ptn[prev] = 0;
+
+        let unique_orbits = self.orbits.into_iter().collect::<HashSet<_>>().into_iter();
+        // for debugging
+        //let mut unique_orbits = unique_orbits.collect::<Vec<_>>();
+        //unique_orbits.sort();
+
+        for o in unique_orbits {
+            for i in 0..M {
+                if self.lab[i] == o {
+                    self.lab[i] = self.lab[0];
+                    self.lab[0] = o;
+                    break;
+                }
+            }
+
+            self.compute();
+
+            self.print();
+        }
     }
 }
 
