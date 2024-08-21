@@ -92,12 +92,12 @@ impl<const M: ConstT> Nauty<M> {
     pub fn compute(&mut self) {
         unsafe {
             densenauty(
-                self.g.as_mut_ptr(),
+                self.g.as_mut_ptr(), // read only
                 self.lab.as_mut_ptr(),
                 self.ptn.as_mut_ptr(),
-                self.orbits.as_mut_ptr(),
-                &mut self.options,
-                &mut self.stats,
+                self.orbits.as_mut_ptr(), // write only
+                &mut self.options,        // read only
+                &mut self.stats,          // write only
                 Self::WORDS as c_int,
                 M as c_int,
                 std::ptr::null_mut(),
