@@ -34,7 +34,6 @@ pub fn revert<const M: ConstT>(node: Node) -> Node {
 #[derive(Clone, Copy)]
 pub struct Nauty<const M: ConstT> {
     g: [graph; M],
-    lab: [c_int; M],
     ptn: [c_int; M],
     orbits: [c_int; M],
     options: optionblk,
@@ -57,7 +56,6 @@ impl<const M: ConstT> Nauty<M> {
 
         Nauty {
             g: Nauty::<M>::full_graph().try_into().unwrap(),
-            lab: [0 as c_int; M],
             ptn: [0 as c_int; M],
             orbits: [0 as c_int; M],
             options: optionblk::default(),
@@ -90,11 +88,11 @@ impl<const M: ConstT> Nauty<M> {
         g
     }
 
-    pub fn compute(&mut self) {
+    pub fn compute(&mut self, lab: &mut [Node; M]) {
         unsafe {
             densenauty(
                 self.g.as_mut_ptr(), // read only
-                self.lab.as_mut_ptr(),
+                lab.as_mut_ptr(),
                 self.ptn.as_mut_ptr(),
                 self.orbits.as_mut_ptr(), // write only
                 &mut self.options,        // read only
@@ -106,10 +104,10 @@ impl<const M: ConstT> Nauty<M> {
         }
     }
 
-    pub fn print(&self) {
+    pub fn print(&self, lab: &[Node; M]) {
         if true {
             print!("[");
-            for &l in self.lab.iter() {
+            for &l in lab.iter() {
                 print!("{} ", revert::<M>(l));
             }
             println!("]");
@@ -137,7 +135,9 @@ impl<const M: ConstT> Nauty<M> {
     }
 
     pub fn recurse(&mut self) {
-        self.compute();
+        let mut lab = [0 as Node; M];
+
+        self.compute(&mut lab);
 
         self.options.defaultptn = 0;
 
@@ -145,10 +145,10 @@ impl<const M: ConstT> Nauty<M> {
         self.ptn[0] = 0;
         *self.ptn.last_mut().unwrap() = 0;
 
-        self._recurse(0);
+        self._recurse(0, &mut lab);
     }
 
-    fn _recurse(&mut self, prev: usize) {
+    fn _recurse(&mut self, prev: usize, prev_lab: &mut [Node; M]) {
         let mut unique_orbits = self
             .orbits
             .into_iter()
@@ -159,7 +159,7 @@ impl<const M: ConstT> Nauty<M> {
         unique_orbits.sort();
         unique_orbits.reverse();
 
-        let mut dead_nodes = self.lab[..prev].into_iter().copied().collect::<Vec<_>>();
+        let mut dead_nodes = prev_lab[..prev].into_iter().copied().collect::<Vec<_>>();
         dead_nodes.sort();
         dead_nodes.reverse();
 
@@ -177,9 +177,9 @@ impl<const M: ConstT> Nauty<M> {
             let mut found = false;
 
             for i in prev..M {
-                if self.lab[i] == o {
-                    self.lab[i] = self.lab[prev];
-                    self.lab[prev] = o;
+                if prev_lab[i] == o {
+                    prev_lab[i] = prev_lab[prev];
+                    prev_lab[prev] = o;
                     found = true;
                     break;
                 }
@@ -189,19 +189,19 @@ impl<const M: ConstT> Nauty<M> {
                 continue;
             }
 
-            let mut nau = *self;
+            let mut lab = prev_lab.clone();
 
-            nau.compute();
+            self.compute(&mut lab);
 
             if prev + 1 < M - MtoN::<M>() as usize {
-                nau.ptn[prev] = 1;
-                nau.ptn[prev + 1] = 0;
+                self.ptn[prev] = 1;
+                self.ptn[prev + 1] = 0;
 
-                nau._recurse(prev + 1);
+                self._recurse(prev + 1, &mut lab);
 
                 // if prev + 1 != M -1
-                nau.ptn[prev + 1] = 1;
-                nau.ptn[prev] = 0;
+                self.ptn[prev + 1] = 1;
+                self.ptn[prev] = 0;
             } else {
             }
         }
