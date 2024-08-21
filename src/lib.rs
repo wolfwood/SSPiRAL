@@ -187,4 +187,12 @@ mod tests {
             assert_eq!(SETWORDSNEEDED(NtoM::<N>()), Nauty::<{NtoM::<N>()}>::WORDS);
         });
     }
+
+    #[test]
+    #[allow(non_snake_case)]
+    fn test_NtoMtoN() {
+        seq_macro::seq!(N in 1..=31 {
+            assert_eq!(N as i32, MtoN::<{NtoM::<N>()}>() );
+        });
+    }
 }
