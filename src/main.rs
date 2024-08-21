@@ -6,9 +6,5 @@ const M: ConstT = NtoM::<N>();
 fn main() {
     let mut nau = Nauty::<M>::new();
 
-    nau.compute();
-
-    nau.print();
-
     nau.recurse();
 }

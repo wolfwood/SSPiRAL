@@ -31,6 +31,7 @@ pub fn revert<const M: ConstT>(node: Node) -> Node {
     //node + 1
 }
 
+#[derive(Clone, Copy)]
 pub struct Nauty<const M: ConstT> {
     g: [graph; M],
     lab: [c_int; M],
@@ -136,34 +137,88 @@ impl<const M: ConstT> Nauty<M> {
     }
 
     pub fn recurse(&mut self) {
+        self.compute();
+
         self.options.defaultptn = 0;
 
         self.ptn.fill(1);
+        self.ptn[0] = 0;
         *self.ptn.last_mut().unwrap() = 0;
 
         self._recurse(0);
     }
 
     fn _recurse(&mut self, prev: usize) {
-        self.ptn[prev] = 0;
-
-        let unique_orbits = self.orbits.into_iter().collect::<HashSet<_>>().into_iter();
+        let mut unique_orbits = self
+            .orbits
+            .into_iter()
+            .collect::<HashSet<_>>()
+            .into_iter()
+            .collect::<Vec<_>>();
         // for debugging
-        //let mut unique_orbits = unique_orbits.collect::<Vec<_>>();
-        //unique_orbits.sort();
+        unique_orbits.sort();
+        unique_orbits.reverse();
 
-        for o in unique_orbits {
-            for i in 0..M {
+        let mut dead_nodes = self.lab[..prev].into_iter().copied().collect::<Vec<_>>();
+        dead_nodes.sort();
+        dead_nodes.reverse();
+
+        println!("=== Recurse {prev} ===");
+        print!(" [ ");
+        for &d in dead_nodes.iter() {
+            print!("{} ", revert::<M>(d));
+        }
+        println!("]");
+
+        let cap = if dead_nodes.len() > 0 {
+            let mut i = 0;
+            while unique_orbits[i] > dead_nodes[0] {
+                i += 1;
+            }
+            i
+        } else {
+            unique_orbits.len()
+        };
+
+        for &o in unique_orbits[..cap].iter() {
+            let mut found = false;
+
+            for i in prev..M {
                 if self.lab[i] == o {
-                    self.lab[i] = self.lab[0];
-                    self.lab[0] = o;
+                    self.lab[i] = self.lab[prev];
+                    self.lab[prev] = o;
+                    found = true;
                     break;
                 }
             }
 
-            self.compute();
+            if !found {
+                continue;
+            }
 
-            self.print();
+            let mut nau = *self;
+
+            nau.compute();
+
+            if prev + 1 < M - MtoN::<M>() as usize {
+                nau.ptn[prev] = 1;
+                nau.ptn[prev + 1] = 0;
+
+                nau._recurse(prev + 1);
+
+                // if prev + 1 != M -1
+                nau.ptn[prev + 1] = 1;
+                nau.ptn[prev] = 0;
+            } else {
+                let mut also_dead_nodes = nau.lab[..prev+1].into_iter().copied().collect::<Vec<_>>();
+                also_dead_nodes.sort();
+                also_dead_nodes.reverse();
+                print!(" [ ");
+                for &d in also_dead_nodes.iter() {
+                    print!("{} ", revert::<M>(d));
+                }
+                println!("]");
+            }
         }
     }
 }
