@@ -163,13 +163,6 @@ impl<const M: ConstT> Nauty<M> {
         dead_nodes.sort();
         dead_nodes.reverse();
 
-        println!("=== Recurse {prev} ===");
-        print!(" [ ");
-        for &d in dead_nodes.iter() {
-            print!("{} ", revert::<M>(d));
-        }
-        println!("]");
-
         let cap = if dead_nodes.len() > 0 {
             let mut i = 0;
             while unique_orbits[i] > dead_nodes[0] {
@@ -210,14 +203,6 @@ impl<const M: ConstT> Nauty<M> {
                 nau.ptn[prev + 1] = 1;
                 nau.ptn[prev] = 0;
             } else {
-                let mut also_dead_nodes = nau.lab[..prev+1].into_iter().copied().collect::<Vec<_>>();
-                also_dead_nodes.sort();
-                also_dead_nodes.reverse();
-                print!(" [ ");
-                for &d in also_dead_nodes.iter() {
-                    print!("{} ", revert::<M>(d));
-                }
-                println!("]");
             }
         }
     }
