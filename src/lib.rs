@@ -1,5 +1,4 @@
 use nauty_Traces_sys::*;
-use std::collections::HashSet;
 use std::io::{self, Write};
 use std::os::raw::c_int;
 
@@ -8,6 +7,9 @@ pub type Node = i32;
 // M must be a usize to set array bounds until generic_const_exprs stabilizes
 // we'll have to downcast to Node in places instead of upcasting to usize
 pub type ConstT = usize;
+
+// for counting data losses
+pub type Score = u32;
 
 // we don't define N and M in the library but callers need at least one, which can generate the other
 // having the type of N and M be different helps prevent mistakes
@@ -149,15 +151,7 @@ impl<const M: ConstT> Nauty<M> {
     }
 
     fn _recurse(&mut self, prev: usize, prev_lab: &mut [Node; M]) {
-        let mut unique_orbits = self
-            .orbits
-            .into_iter()
-            .collect::<HashSet<_>>()
-            .into_iter()
-            .collect::<Vec<_>>();
-        // for debugging
-        unique_orbits.sort();
-        unique_orbits.reverse();
+        let (unique_orbits, _unique_counts) = self.count_orbits();
 
         let mut dead_nodes = prev_lab[..prev].into_iter().copied().collect::<Vec<_>>();
         dead_nodes.sort();
@@ -205,6 +199,34 @@ impl<const M: ConstT> Nauty<M> {
             } else {
             }
         }
+    }
+
+    fn count_orbits(&mut self) -> (Vec<Node>, Vec<Score>) {
+        self.orbits.sort();
+        self.orbits.reverse();
+
+        let mut uniq = Vec::<Node>::new();
+        let mut counts = Vec::<Score>::new();
+
+        let mut count = 0 as Score;
+        let mut key = self.orbits[0];
+        uniq.push(self.orbits[0]);
+
+        for o in self.orbits {
+            if o != key {
+                uniq.push(o);
+                counts.push(count);
+
+                key = o;
+                count = 1;
+            } else {
+                count += 1;
+            }
+        }
+
+        counts.push(count);
+
+        (uniq, counts)
     }
 }
 
