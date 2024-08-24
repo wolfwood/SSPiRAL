@@ -1,3 +1,4 @@
+use arrayvec::ArrayVec;
 use nauty_Traces_sys::*;
 use std::io::{self, Write};
 use std::os::raw::c_int;
@@ -153,7 +154,10 @@ impl<const M: ConstT> Nauty<M> {
     fn _recurse(&mut self, prev: usize, prev_lab: &mut [Node; M]) {
         let (unique_orbits, _unique_counts) = self.count_orbits();
 
-        let mut dead_nodes = prev_lab[..prev].into_iter().copied().collect::<Vec<_>>();
+        let mut dead_nodes = prev_lab[..prev]
+            .into_iter()
+            .copied()
+            .collect::<ArrayVec<_, M>>();
         dead_nodes.sort();
         dead_nodes.reverse();
 
@@ -201,12 +205,12 @@ impl<const M: ConstT> Nauty<M> {
         }
     }
 
-    fn count_orbits(&mut self) -> (Vec<Node>, Vec<Score>) {
+    fn count_orbits(&mut self) -> (ArrayVec<Node, M>, ArrayVec<Score, M>) {
         self.orbits.sort();
         self.orbits.reverse();
 
-        let mut uniq = Vec::<Node>::new();
-        let mut counts = Vec::<Score>::new();
+        let mut uniq = ArrayVec::<Node, M>::new();
+        let mut counts = ArrayVec::<Score, M>::new();
 
         let mut count = 0 as Score;
         let mut key = self.orbits[0];
