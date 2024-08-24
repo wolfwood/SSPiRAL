@@ -39,6 +39,7 @@ pub struct Nauty<const M: ConstT, const DEBUG: bool = false> {
     g: [graph; M],
     ptn: [c_int; M],
     orbits: [c_int; M],
+    scores: [Score; M],
     options: optionblk,
     stats: statsblk,
 }
@@ -67,6 +68,7 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
             g: Nauty::<M>::full_graph().try_into().unwrap(),
             ptn: [0 as c_int; M],
             orbits: [0 as c_int; M],
+            scores: [0 as Score; M],
             options: optionblk::default(),
             stats: statsblk::default(),
         }
@@ -143,10 +145,18 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
         println!();
     }
 
+    pub fn print_scores(&self) {
+        for i in 0..M {
+            println!("{} {}", i + 1, self.scores[i]);
+        }
+    }
+
     pub fn recurse(&mut self) {
         let mut lab = [0 as Node; M];
 
         self.compute(&mut lab);
+
+        self.scores[0] = 1;
 
         self.options.defaultptn = 0;
 
@@ -158,7 +168,7 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
     }
 
     fn _recurse(&mut self, prev: usize, prev_lab: &mut [Node; M]) {
-        let (unique_orbits, _unique_counts) = self.count_orbits();
+        let (unique_orbits, unique_counts) = self.count_orbits();
 
         if DEBUG {
             println!("=== Recurse {prev} ===");
@@ -178,13 +188,13 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
             unique_orbits.len()
         };
 
-        for &o in unique_orbits[..cap].iter() {
+        for i in 0..cap {
             let mut found = false;
 
-            for i in prev..M {
-                if prev_lab[i] == o {
-                    prev_lab[i] = prev_lab[prev];
-                    prev_lab[prev] = o;
+            for j in prev..M {
+                if prev_lab[j] == unique_orbits[i] {
+                    prev_lab[j] = prev_lab[prev];
+                    prev_lab[prev] = unique_orbits[i];
                     found = true;
                     break;
                 }
@@ -197,6 +207,8 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
             let mut lab = *prev_lab;
 
             self.compute(&mut lab);
+
+            self.scores[prev + 1] += unique_counts[i];
 
             if prev + 1 < M - MtoN::<M>() as usize {
                 self.ptn[prev] = 1;

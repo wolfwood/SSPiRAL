@@ -7,4 +7,6 @@ fn main() {
     let mut nau = Nauty::<M, true>::new();
 
     nau.recurse();
+
+    nau.print_scores();
 }
