@@ -43,6 +43,12 @@ pub struct Nauty<const M: ConstT> {
     stats: statsblk,
 }
 
+impl<const M: ConstT> Default for Nauty<M> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<const M: ConstT> Nauty<M> {
     // SETWORDSNEEDED(m) is nonconst so do it ourselves
     const WORDS: usize = M / WORDSIZE as usize + if M % WORDSIZE as usize == 0 { 0 } else { 1 };
@@ -154,14 +160,11 @@ impl<const M: ConstT> Nauty<M> {
     fn _recurse(&mut self, prev: usize, prev_lab: &mut [Node; M]) {
         let (unique_orbits, _unique_counts) = self.count_orbits();
 
-        let mut dead_nodes = prev_lab[..prev]
-            .into_iter()
-            .copied()
-            .collect::<ArrayVec<_, M>>();
+        let mut dead_nodes = prev_lab[..prev].iter().copied().collect::<ArrayVec<_, M>>();
         dead_nodes.sort();
         dead_nodes.reverse();
 
-        let cap = if dead_nodes.len() > 0 {
+        let cap = if !dead_nodes.is_empty() {
             let mut i = 0;
             while unique_orbits[i] > dead_nodes[0] {
                 i += 1;
@@ -187,7 +190,7 @@ impl<const M: ConstT> Nauty<M> {
                 continue;
             }
 
-            let mut lab = prev_lab.clone();
+            let mut lab = *prev_lab;
 
             self.compute(&mut lab);
 
