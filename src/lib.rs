@@ -35,7 +35,7 @@ pub fn revert<const M: ConstT>(node: Node) -> Node {
 }
 
 #[derive(Clone, Copy)]
-pub struct Nauty<const M: ConstT> {
+pub struct Nauty<const M: ConstT, const DEBUG: bool = false> {
     g: [graph; M],
     ptn: [c_int; M],
     orbits: [c_int; M],
@@ -49,11 +49,11 @@ impl<const M: ConstT> Default for Nauty<M> {
     }
 }
 
-impl<const M: ConstT> Nauty<M> {
+impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
     // SETWORDSNEEDED(m) is nonconst so do it ourselves
     const WORDS: usize = M / WORDSIZE as usize + if M % WORDSIZE as usize == 0 { 0 } else { 1 };
 
-    pub fn new() -> Nauty<M> {
+    pub fn new() -> Nauty<M, DEBUG> {
         unsafe {
             nauty_check(
                 WORDSIZE as c_int,
@@ -160,6 +160,10 @@ impl<const M: ConstT> Nauty<M> {
     fn _recurse(&mut self, prev: usize, prev_lab: &mut [Node; M]) {
         let (unique_orbits, _unique_counts) = self.count_orbits();
 
+        if DEBUG {
+            println!("=== Recurse {prev} ===");
+        }
+
         let mut dead_nodes = prev_lab[..prev].iter().copied().collect::<ArrayVec<_, M>>();
         dead_nodes.sort();
         dead_nodes.reverse();
@@ -204,6 +208,9 @@ impl<const M: ConstT> Nauty<M> {
                 self.ptn[prev + 1] = 1;
                 self.ptn[prev] = 0;
             } else {
+                if DEBUG {
+                    println!("=== No recurse {prev} ===");
+                }
             }
         }
     }
