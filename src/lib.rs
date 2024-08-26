@@ -236,11 +236,10 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
 
         let mut count = 0 as Score;
         let mut key = self.orbits[0];
-        uniq.push(self.orbits[0]);
 
         for o in self.orbits {
             if o != key {
-                uniq.push(o);
+                uniq.push(key);
                 counts.push(count);
 
                 key = o;
@@ -250,6 +249,7 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
             }
         }
 
+        uniq.push(key);
         counts.push(count);
 
         (uniq, counts)
