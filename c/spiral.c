@@ -127,10 +127,11 @@ void *mymap(uint64_t *size) {
 
   int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;
 
+  // XXX test for Huge TLB (MAP_HUGETLB)?
   if (rounding == oneGB) {
-    mmap_flags |= MAP_HUGETLB|MAP_HUGE_1GB;
+    mmap_flags |= MAP_HUGE_1GB;
   } else if (rounding == twoMB) {
-    mmap_flags |= MAP_HUGETLB|MAP_HUGE_2MB;
+    mmap_flags |= MAP_HUGE_2MB;
   }
 
   void *temp = mmap(NULL, *size, PROT_WRITE, mmap_flags, -1, 0);
