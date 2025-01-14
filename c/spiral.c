@@ -1,3 +1,6 @@
+#define _GNU_SOURCE
+#include <search.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -20,8 +23,6 @@
 
 // unlink
 #include <unistd.h>
-
-#include <search.h>
 
 /* types */
 typedef uint8_t node_t;
