@@ -118,7 +118,7 @@ void *mymap(uint64_t *size) {
 
   void* temp = mmap(NULL, *size, PROT_WRITE, MAP_NORESERVE|MAP_SHARED, tfd, 0);
 #else
-  uint64_t rounding = twoMB;
+  uint64_t rounding = 1;
 
   if (rounding && *size % rounding) {
     // adjust length for myunmap to page alignment
@@ -128,6 +128,7 @@ void *mymap(uint64_t *size) {
   int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;
 
   // XXX test for Huge TLB (MAP_HUGETLB)?
+  // using big pages without MAP_HUGETLB benchmarks worse than no rounding
   if (rounding == oneGB) {
     mmap_flags |= MAP_HUGE_1GB;
   } else if (rounding == twoMB) {
