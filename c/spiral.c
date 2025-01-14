@@ -121,6 +121,7 @@ void *mymap(uint64_t *size) {
   uint64_t rounding = twoMB;
 
   if (rounding && *size % rounding) {
+    // adjust length for myunmap to page alignment
     *size = ((*size/rounding) +1) * rounding;
   }
 
@@ -132,7 +133,6 @@ void *mymap(uint64_t *size) {
     mmap_flags |= MAP_HUGETLB|MAP_HUGE_2MB;
   }
 
-  // XXX - adjust length for mummap to page alignment
   void *temp = mmap(NULL, *size, PROT_WRITE, mmap_flags, -1, 0);
 #endif
 
