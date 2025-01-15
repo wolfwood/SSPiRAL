@@ -39,11 +39,9 @@ inline fn layout2node(l: Layout) Node {
     return @ctz(l) + 1;
 }
 
-const bitCount = @import("std").meta.bitCount;
-
 inline fn largestInLayout(l: Layout) Layout {
     assert(l != 0);
-    var result = @as(Layout, 1) << (bitCount(Layout) - @as(Node, 1) - @clz(l));
+    const result = @as(Layout, 1) << (M - @as(Node, 1) - @clz(l));
 
     assert(result != 0);
 
@@ -52,7 +50,7 @@ inline fn largestInLayout(l: Layout) Layout {
 
 inline fn smallestInLayoutSlow(l: Layout) Layout {
     assert(l != 0);
-    var result = @as(Layout, 1) << @ctz(l);
+    const result = @as(Layout, 1) << @ctz(l);
 
     assert(result != 0);
 
@@ -90,7 +88,7 @@ inline fn _decomposeLayout2(comptime limit: Node, name: Layout, comptime T: type
 
     var i: u32 = 0;
     var l = largestInLayout(name);
-    var stop = smallestInLayout(name);
+    const stop = smallestInLayout(name);
 
     while (l >= stop) : (l >>= 1) {
         if (name & l != 0) {
@@ -143,7 +141,7 @@ inline fn _composeLayout(comptime limit: Node, comptime T: anytype, name: *const
 
 inline fn composeLayoutVector(comptime limit: Node, name: *const [limit]Layout) Layout {
     const len = comptime roundToAlignment(Layout, limit);
-    const zeros = @splat(len, @as(Layout, 0));
+    const zeros: [len]Layout = @splat(0);
 
     comptime var i: i32 = 0;
     comptime var mask: @Vector(len, i32) = undefined;
@@ -165,7 +163,7 @@ fn composeLayoutVectorAsm(comptime limit: Node, name: *align(64) const [limit]La
     comptime assert(has_avx512f);
 
     const len = comptime roundToAlignment(Layout, limit);
-    var zmm0: Vector(if (limit > 16) 16 else len, u32) = undefined;
+    var zmm0: @Vector(if (limit > 16) 16 else len, u32) = undefined;
     const mask = (@as(u17, 1) << if (limit > 16) limit % 16 else limit) - 1;
 
     if (limit <= 8) {
@@ -207,7 +205,7 @@ inline fn recurseCheck(name: Layout, n: Node, _i: Node, depth: Node) bool {
 
     while (i > 0) : (i -= 1) {
         if (node2layout(i) & name != 0) {
-            var temp = i ^ n;
+            const temp = i ^ n;
             if (temp == 0 or (depth > 0 and recurseCheck(name, temp, i - 1, depth - 1))) {
                 return true;
             }
@@ -221,7 +219,7 @@ inline fn recurseCheckLayout(name: Layout, n: Node, _i: Layout, depth: Node) boo
 
     while (i > 0) : (i >>= 1) {
         if (i & name != 0) {
-            var temp = layout2node(i) ^ n;
+            const temp = layout2node(i) ^ n;
             if (temp == 0 or (depth > 0 and recurseCheckLayout(name, temp, i >> 1, depth - 1))) {
                 return true;
             }
@@ -233,7 +231,7 @@ inline fn recurseCheckLayout(name: Layout, n: Node, _i: Layout, depth: Node) boo
 fn checkIfAlive(name: Layout) bool {
     var n: Node = @as(Node, 1) << (N - 1);
     while (n != 0) : (n >>= 1) {
-        var l = node2layout(n);
+        const l = node2layout(n);
         if ((l & name) == 0) {
             if (!recurseCheck(name, n, M, M)) { //@popCount(name)
                 //if (!recurseCheckLayout(name, n, node2layout(M), M)) {
@@ -264,8 +262,6 @@ fn LayoutStats(comptime verify: bool) type {
     };
 }
 
-const Vector = @import("std").meta.Vector;
-
 fn roundToAlignment(comptime T: type, comptime len: u32) u32 {
     const raw = (len * @sizeOf(T));
 
@@ -282,7 +278,7 @@ fn roundToAlignment(comptime T: type, comptime len: u32) u32 {
 
     return
     //if (raw <= (256 / 8)) 32 / @sizeOf(T) else if (raw <= 512 / 8) 64 / @sizeOf(T) else
-    ((raw / 64) + @boolToInt(raw % 64 != 0)) * 64 / @sizeOf(T);
+    ((raw / 64) + @intFromBool(raw % 64 != 0)) * 64 / @sizeOf(T);
 }
 
 // XXX parameterize by limit
@@ -290,8 +286,8 @@ fn MetaLayout(comptime limit: Node) type {
     return struct {
         //scores: [std.math.min(ScoreSize, limit - (N - 1))]Score,
         scores: if (vectorizeAll)
-            if (scaleVectorSize) Vector(roundToAlignment(Score, howLongIsScores(limit)), Score) else Vector(roundToAlignment(Score, ScoreSize), Score)
-        else if (!vectorize or limit <= M / 2) [howLongIsScores(limit)]Score else Vector(if (vectorAlign != 0) (howLongIsScores(limit) / vectorAlign + @boolToInt(howLongIsScores(limit) % vectorAlign != 0)) * vectorAlign else howLongIsScores(limit), Score),
+            if (scaleVectorSize) @Vector(roundToAlignment(Score, howLongIsScores(limit)), Score) else @Vector(roundToAlignment(Score, ScoreSize), Score)
+        else if (!vectorize or limit <= M / 2) [howLongIsScores(limit)]Score else @Vector(if (vectorAlign != 0) (howLongIsScores(limit) / vectorAlign + @intFromBool(howLongIsScores(limit) % vectorAlign != 0)) * vectorAlign else howLongIsScores(limit), Score),
     };
 }
 
@@ -327,7 +323,7 @@ fn _makeWorkContext(
 ) NamedWorkContext(limit) {
     assert(limit > N);
 
-    var result = NamedWorkContext(limit){
+    const result = NamedWorkContext(limit){
         .layouts = layouts,
         .prev_scores = prev_scores,
         .unique = std.AutoHashMap(MetaLayout(limit), ScoreIdx).init(alloc),
@@ -337,7 +333,7 @@ fn _makeWorkContext(
 }
 
 fn getScoreIndex(comptime limit: Node, args: *NamedWorkContext(limit)) !ScoreIdx {
-    var result = try args.unique.getOrPut(args.unique_scores[args.curr_score]);
+    const result = try args.unique.getOrPut(args.unique_scores[args.curr_score]);
 
     if (!result.found_existing) {
         result.value_ptr.* = args.curr_score;
@@ -350,7 +346,7 @@ fn getScoreIndex(comptime limit: Node, args: *NamedWorkContext(limit)) !ScoreIdx
 // passes
 
 fn namedFirstPass(name: Layout, args: *NamedWorkContext(N)) void {
-    args.layouts[name] = LayoutStats(false){ .score = @boolToInt(!checkIfAlive(name)), .name = undefined };
+    args.layouts[name] = LayoutStats(false){ .score = @intFromBool(!checkIfAlive(name)), .name = undefined };
     //if (checkIfAlive(name)) {
     //    args.layouts[name] = LayoutStats(false){ .score = 0 };
     //} else {
@@ -367,7 +363,7 @@ fn namedIntermediatePass(comptime limit: Node, name: Layout, args: *NamedWorkCon
 
     if (limit <= M / 2) {
         if (args.unique_scores[args.curr_score].scores[limit - N - 1] == limit) {
-            args.unique_scores[args.curr_score].scores[limit - N] = @boolToInt(!checkIfAlive(name));
+            args.unique_scores[args.curr_score].scores[limit - N] = @intFromBool(!checkIfAlive(name));
         } else {
             args.unique_scores[args.curr_score].scores[limit - N] = 0;
         }
@@ -381,7 +377,7 @@ fn namedIntermediateLayoutPass(comptime limit: Node, name: Layout, ells: *const 
 
     if (limit <= M / 2) {
         if (args.unique_scores[args.curr_score].scores[limit - N - 1] == limit) {
-            args.unique_scores[args.curr_score].scores[limit - N] = @boolToInt(!checkIfAlive(name));
+            args.unique_scores[args.curr_score].scores[limit - N] = @intFromBool(!checkIfAlive(name));
         } else {
             args.unique_scores[args.curr_score].scores[limit - N] = 0;
         }
@@ -395,7 +391,7 @@ fn namedIntermediateLayoutPtrPass(comptime limit: Node, name: Layout, ells: *[li
 
     if (limit <= M / 2) {
         if (args.unique_scores[args.curr_score].scores[limit - N - 1] == limit) {
-            args.unique_scores[args.curr_score].scores[limit - N] = @boolToInt(!checkIfAlive(name));
+            args.unique_scores[args.curr_score].scores[limit - N] = @intFromBool(!checkIfAlive(name));
         } else {
             args.unique_scores[args.curr_score].scores[limit - N] = 0;
         }
@@ -411,7 +407,7 @@ fn namedIntermediateLayoutOnlyPass(comptime limit: Node, ells: *const [limit]Lay
 
     if (limit <= M / 2) {
         if (args.unique_scores[args.curr_score].scores[limit - N - 1] == limit) {
-            args.unique_scores[args.curr_score].scores[limit - N] = @boolToInt(!checkIfAlive(name));
+            args.unique_scores[args.curr_score].scores[limit - N] = @intFromBool(!checkIfAlive(name));
         } else {
             args.unique_scores[args.curr_score].scores[limit - N] = 0;
         }
@@ -430,7 +426,7 @@ fn namedTerminalPass(comptime limit: Node, name: Layout, args: *NamedWorkContext
 
 inline fn howLongIsScores(comptime limit: Node) Node {
     const oneWay = if (limit <= M / 2) limit - (N - 1) else ScoreSize;
-    const theOtherWay = std.math.min(ScoreSize, limit - (N - 1));
+    const theOtherWay = @min(ScoreSize, limit - (N - 1));
 
     assert(oneWay == theOtherWay);
 
@@ -469,7 +465,7 @@ inline fn initializeCurr(comptime limit: Node, prevName: Layout, args: *NamedWor
         } else {
             const oldlen: i32 = comptime roundToAlignment(Score, howLongIsScores(limit - 1));
             const newlen = comptime roundToAlignment(Score, howLongIsScores(limit));
-            const zeroes = @splat(oldlen, @as(Score, 0));
+            const zeroes: @Vector(oldlen, Score) = @splat(0);
             comptime var i: i32 = 0;
             comptime var mask: @Vector(newlen, i32) = undefined;
 
@@ -505,7 +501,7 @@ inline fn addToCurr(comptime limit: Node, prevName: Layout, args: *NamedWorkCont
         } else {
             const oldlen: i32 = comptime roundToAlignment(Score, howLongIsScores(limit - 1));
             const newlen = comptime roundToAlignment(Score, howLongIsScores(limit));
-            const zeroes = @splat(oldlen, @as(Score, 0));
+            const zeroes: @Vector(oldlen, Score) = @splat(0);
             comptime var i: i32 = 0;
             comptime var mask: @Vector(newlen, i32) = undefined;
 
@@ -783,7 +779,7 @@ fn namedLayoutIteration(
         name |= ells[i];
 
         while (i > 0) {
-            var stop = (@as(Layout, 1) << (limit - i - 1));
+            const stop = (@as(Layout, 1) << (limit - i - 1));
 
             if (ells[i] <= (@as(Layout, 1) << (limit - i - 1))) {
                 ells[i] = ells[i - 1];
@@ -893,7 +889,7 @@ fn namedLayoutIterationTest2(
         name |= ells[i];
 
         while (i > 0) {
-            var stop = (@as(Layout, 1) << (limit - i - 2));
+            const stop = (@as(Layout, 1) << (limit - i - 2));
 
             if (ells[i] <= (@as(Layout, 1) << (limit - i - 1))) {
                 ells[i] = ells[i - 1];
@@ -1160,7 +1156,7 @@ fn NamedIteration(
     comptime work: NamedIterationWork(argtype),
     args: *argtype,
 ) void {
-    var i: Node = 0;
+    const i: Node = 0;
     var name: Layout = 0;
     var ells: [limit]Layout = 0;
     ells[0] = node2layout(M);
@@ -1249,13 +1245,13 @@ pub fn main() !void {
     const allocator = arena.allocator();
 
     //var stats: [totalLayoutCount]LayoutStats(false) = undefined;
-    var stats = try allocator.alloc(LayoutStats(false), totalLayoutCount);
+    const stats = try allocator.alloc(LayoutStats(false), totalLayoutCount);
 
     var ctx0 = NamedWorkContext(N){
         .layouts = stats,
         .unique_scores = [2]MetaLayout(N){
-            MetaLayout(N){ .scores = if (vectorizeAll) @splat(@typeInfo(@typeInfo(MetaLayout(N)).Struct.fields[0].field_type).Vector.len, @as(Score, 0)) else [1]Score{0} },
-            MetaLayout(N){ .scores = if (vectorizeAll) @splat(@typeInfo(@typeInfo(MetaLayout(N)).Struct.fields[0].field_type).Vector.len, @as(Score, 0)) else [1]Score{1} },
+            MetaLayout(N){ .scores = if (vectorizeAll) @splat(0) else [1]Score{0} },
+            MetaLayout(N){ .scores = if (vectorizeAll) @splat(0) else [1]Score{1} },
         },
     };
     if (vectorizeAll) {
@@ -1423,7 +1419,7 @@ inline fn map(comptime a: anytype, comptime T: type, comptime pred: fn (@typeInf
 
     var result: [@typeInfo(@TypeOf(a)).Array.len]T = undefined;
 
-    inline for (a) |e, i| {
+    inline for (a, 0..) |e, i| {
         result[i] = pred(e);
     }
 
@@ -1487,7 +1483,7 @@ const iterators = .{namedRecursiveIteration};
 const layoutIterators = .{namedLayoutIterationTest3};
 
 test "fast Named Iteration Count" {
-    comptime var i = if (N >= 5) 13 else M / 2;
+    const i = if (N >= 5) 13 else M / 2;
 
     inline for (iterators) |iter| {
         var args = TestWorkContext{ .limit = i };
