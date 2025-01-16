@@ -88,23 +88,6 @@ inline fn decomposeLayout(comptime limit: Node, name: Layout) [limit]Layout {
     return _decomposeLayout(limit, name, Layout, noOpLayout);
 }
 
-inline fn _decomposeLayout2(comptime limit: Node, name: Layout, comptime T: type, comptime pred: fn (Layout) callconv(.Inline) T) [limit]T {
-    var result: [limit]T = undefined;
-
-    var i: u32 = 0;
-    var l = largestInLayout(name);
-    const stop = smallestInLayout(name);
-
-    while (l >= stop) : (l >>= 1) {
-        if (name & l != 0) {
-            result[i] = pred(l);
-            i += 1;
-        }
-    }
-
-    return result;
-}
-
 inline fn _decomposeLayout(comptime limit: Node, _name: Layout, comptime T: type, comptime pred: fn (Layout) callconv(.Inline) T) [limit]T {
     var result: [limit]T = undefined;
 
@@ -135,10 +118,9 @@ inline fn _composeLayout(comptime limit: Node, comptime T: anytype, name: *const
     var result: Layout = 0;
 
     comptime var i: Node = 0;
+    // XXX benchmark inline for (name) |l| {result |= pred(l);}
     inline while (i < limit) : (i += 1) {
         result |= pred(name[i]);
-        //    for (name) |l| {
-        //        result |= pred(l);
     }
 
     return result;
@@ -158,8 +140,6 @@ inline fn composeLayoutVector(comptime limit: Node, name: *const [limit]Layout) 
         mask[i] = limit - i - 1;
     }
     const enns = @shuffle(Layout, name.*, zeros, mask);
-
-    // result: Layout = 0;
 
     return @reduce(.Or, enns);
 }
@@ -219,43 +199,17 @@ inline fn recurseCheck(name: Layout, n: Node, _i: Node, depth: Node) bool {
     return false;
 }
 
-inline fn recurseCheckLayout(name: Layout, n: Node, _i: Layout, depth: Node) bool {
-    var i = _i;
-
-    while (i > 0) : (i >>= 1) {
-        if (i & name != 0) {
-            const temp = layout2node(i) ^ n;
-            if (temp == 0 or (depth > 0 and recurseCheckLayout(name, temp, i >> 1, depth - 1))) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 fn checkIfAlive(name: Layout) bool {
     var n: Node = @as(Node, 1) << (N - 1);
     while (n != 0) : (n >>= 1) {
         const l = node2layout(n);
         if ((l & name) == 0) {
-            if (!recurseCheck(name, n, M, M)) { //@popCount(name)
-                //if (!recurseCheckLayout(name, n, node2layout(M), M)) {
+            if (!recurseCheck(name, n, M, M)) {
                 return false;
             }
         }
     }
     return true;
-}
-
-fn deadnessCheck(comptime limit: Node, name: Layout) bool {
-    const nodes = decomposeLayout(limit, name);
-
-    var j = 0;
-
-    var n: Node = @as(Node, 1) << (N - 1);
-    while (n != 0) : (n >>= 1) {
-        while ((j < limit - 1) & &((nodes[j]) > n)) : (j -= 1) {}
-    }
 }
 
 // structs
@@ -349,62 +303,14 @@ fn getScoreIndex(comptime limit: Node, args: *NamedWorkContext(limit)) !ScoreIdx
 
 fn namedFirstPass(name: Layout, args: *NamedWorkContext(N)) void {
     args.layouts[name] = LayoutStats(false){ .score = @intFromBool(!checkIfAlive(name)), .name = undefined };
-    //if (checkIfAlive(name)) {
-    //    args.layouts[name] = LayoutStats(false){ .score = 0 };
-    //} else {
-    // XXX assume zero initialized?
-    //    args.layouts[name] = LayoutStats(false){ .score = 1 };
-    //}
-    //if (@TypeOf(args.layouts[name].name) != void) {
-    //    args.layouts[name].name = name;
-    //}
-}
 
-fn namedIntermediatePass(comptime limit: Node, name: Layout, args: *NamedWorkContext(limit)) !void {
-    sumChildLayoutScores(limit, name, args);
-
-    if (limit <= M / 2) {
-        if (args.unique_scores[args.curr_score].scores[limit - N - 1] == limit) {
-            args.unique_scores[args.curr_score].scores[limit - N] = @intFromBool(!checkIfAlive(name));
-        } else {
-            args.unique_scores[args.curr_score].scores[limit - N] = 0;
-        }
+    // currently not using name validation
+    if (@TypeOf(args.layouts[name].name) != void) {
+        args.layouts[name].name = name;
     }
-
-    args.layouts[name].score = try getScoreIndex(limit, args);
 }
 
 fn namedIntermediateLayoutPass(comptime limit: Node, name: Layout, ells: *const [limit]Layout, args: *NamedWorkContext(limit)) !void {
-    sumChildLayoutScoresLayout(limit, name, ells, args);
-
-    if (limit <= M / 2) {
-        if (args.unique_scores[args.curr_score].scores[limit - N - 1] == limit) {
-            args.unique_scores[args.curr_score].scores[limit - N] = @intFromBool(!checkIfAlive(name));
-        } else {
-            args.unique_scores[args.curr_score].scores[limit - N] = 0;
-        }
-    }
-
-    args.layouts[name].score = try getScoreIndex(limit, args);
-}
-
-fn namedIntermediateLayoutPtrPass(comptime limit: Node, name: Layout, ells: *[limit][*]const Layout, args: *NamedWorkContext(limit)) !void {
-    sumChildLayoutScoresLayoutPtr(limit, name, ells, args);
-
-    if (limit <= M / 2) {
-        if (args.unique_scores[args.curr_score].scores[limit - N - 1] == limit) {
-            args.unique_scores[args.curr_score].scores[limit - N] = @intFromBool(!checkIfAlive(name));
-        } else {
-            args.unique_scores[args.curr_score].scores[limit - N] = 0;
-        }
-    }
-
-    args.layouts[name].score = try getScoreIndex(limit, args);
-}
-
-fn unnamedIntermediateLayoutPass(comptime limit: Node, ells: *const [limit]Layout, args: *NamedWorkContext(limit)) !void {
-    const name = composeLayout(limit, ells);
-
     sumChildLayoutScoresLayout(limit, name, ells, args);
 
     if (limit <= M / 2) {
@@ -523,51 +429,12 @@ inline fn addToCurr(comptime limit: Node, prevName: Layout, args: *NamedWorkCont
     //addToScore(limit, getCurrScore(limit, args), getPrevScore(limit, prev, args));
 }
 
-fn sumChildLayoutScoresSlow(comptime limit: Node, name: Layout, args: *NamedWorkContext(limit)) void {
-    // we skip the last entry if we are in the intermediate phase because it gets filled in from liveness check
-    //const length = if (limit - 1 <= M / 2) limit - N else ScoreSize;
-    var l = largestInLayout(name); //node2layout(M);
-
-    initializeCurr(limit, name ^ l, args);
-
-    l >>= 1;
-
-    while (l >= smallestInLayout(name)) : (l >>= 1) {
-        if (name & l != 0) {
-            addToCurr(limit, name ^ l, args);
-        }
-    }
-}
-
-fn sumChildLayoutScoresWrapper(comptime limit: Node, name: Layout, args: *NamedWorkContext(limit)) void {
-    var ells = decomposeLayout(limit, name);
-    sumChildLayoutScoresLayout(limit, name, &ells, args);
-}
-
 inline fn sumChildLayoutScoresLayout(comptime limit: Node, name: Layout, ells: *const [limit]Layout, args: *NamedWorkContext(limit)) void {
     initializeCurr(limit, name ^ ells[0], args);
     comptime var i = 1;
 
     inline while (i < limit) : (i += 1) {
         addToCurr(limit, name ^ ells[i], args);
-    }
-}
-
-inline fn sumChildLayoutScoresLayoutPtr(comptime limit: Node, name: Layout, ells: *[limit][*]const Layout, args: *NamedWorkContext(limit)) void {
-    initializeCurr(limit, name ^ ells[0][0], args);
-    comptime var i = 1;
-
-    inline while (i < limit) : (i += 1) {
-        addToCurr(limit, name ^ ells[i][0], args);
-    }
-}
-
-inline fn sumChildLayoutScoresLayoutOnly(comptime limit: Node, ells: *const [limit]Layout, args: *NamedWorkContext(limit)) void {
-    initializeCurr(limit, ells[0], args);
-    comptime var i = 1;
-
-    inline while (i < limit) : (i += 1) {
-        addToCurr(limit, ells[i], args);
     }
 }
 
@@ -581,25 +448,6 @@ fn sumChildLayoutScores(comptime limit: Node, _name: Layout, args: *NamedWorkCon
     while (name != 0) {
         l = smallestInLayout(name);
         name ^= l;
-        addToCurr(limit, _name ^ l, args);
-    }
-}
-
-fn sumChildLayoutScores2(comptime limit: Node, _name: Layout, args: *NamedWorkContext(limit)) void {
-    //var curr = getCurrScore(limit, args);
-    var name = _name;
-    var l = smallestInLayout(name); //node2layout(M);
-
-    name ^= l;
-    {
-        //var prev = getPrevScore(limit, _name ^ l, args);
-        initializeCurr(limit, name, args);
-    }
-    while (name != 0) {
-        l = smallestInLayout(name);
-        name ^= l;
-
-        //var prev = getPrevScore(limit, _name ^ l, args);
         addToCurr(limit, _name ^ l, args);
     }
 }
@@ -670,34 +518,6 @@ fn namedRecursiveIteration(
     nriHelper(limit, 1, node2layout(M), 0, args, work);
 }
 
-inline fn nriHelper3(
-    comptime limit: Node,
-    //    comptime argtype: type,
-    comptime i: Node,
-    _l: Layout,
-    name: Layout,
-    args: *NamedWorkContext(limit),
-) !void {
-    var l = _l;
-
-    while (l > if (i == limit) 0 else @as(Layout, 1) << (limit - 1 - i)) : (l >>= 1) {
-        //name |= l;
-        if (i == limit) {
-            try namedIntermediatePass(limit, name | l, args);
-        } else {
-            try nriHelper3(limit, i + 1, l >> 1, name | l, args);
-        }
-        //name ^= l;
-    }
-}
-
-fn namedRecursiveIteration3(
-    comptime limit: Node,
-    args: *NamedWorkContext(limit),
-) !void {
-    try nriHelper3(limit, 1, node2layout(M), 0, args);
-}
-
 inline fn nrliHelper(
     comptime limit: Node,
     //    comptime argtype: type,
@@ -728,204 +548,6 @@ inline fn nrliHelper(
             );
         }
         //name ^= l;
-    }
-}
-
-fn namedRecursiveLayoutIteration(
-    comptime limit: Node,
-    //comptime argtype: type,
-    args: anytype,
-    //comptime work: fn (name: Layout, args: @TypeOf(args)) void,
-) // @typeInfo(@TypeOf(work)).Fn.return_type.? {
-!void {
-    var ells: [limit]Layout = undefined;
-
-    try nrliHelper(
-        limit,
-        1,
-        node2layout(M),
-        0,
-        &ells,
-        args,
-        //work
-    );
-}
-
-fn namedLayoutIteration(
-    comptime limit: Node,
-    //comptime argtype: type,
-    args: anytype,
-    //comptime work: fn (name: Layout, args: @TypeOf(args)) void,
-) // @typeInfo(@TypeOf(work)).Fn.return_type.? {
-!void {
-    var name: Layout = 0;
-    var ells: [limit]Layout = undefined;
-
-    var i: Node = 1;
-
-    ells[i] = node2layout(M);
-
-    while (i < limit) : (i += 1) {
-        ells[i] = M - i + 1;
-    }
-
-    i = 0;
-
-    while (ells[0] > comptime (@as(Layout, 1) << (limit - 1))) : (ells[0] >>= 1) {
-        name |= ells[i];
-
-        while (i > 0) {
-            const stop = (@as(Layout, 1) << (limit - i - 1));
-
-            if (ells[i] <= (@as(Layout, 1) << (limit - i - 1))) {
-                ells[i] = ells[i - 1];
-            } else {
-                name ^= ells[i];
-            }
-
-            ells[i] >>= 1;
-            name |= ells[i];
-
-            if (i == comptime (limit - 2)) {
-                ells[limit - 1] = ells[limit - 2] >> 1;
-
-                while (ells[limit - 1] > 0) : (ells[limit - 1] >>= 1) {
-                    try namedIntermediateLayoutPass(limit, ells[i] | name, &ells, args);
-                }
-
-                if (ells[i] <= stop) {
-                    name ^= ells[i];
-                    i -= 1;
-                }
-            } else if (ells[i] <= stop) {
-                name ^= ells[i];
-                i -= 1;
-            } else {
-                i += 1;
-            }
-        }
-        name ^= ells[i];
-    }
-}
-
-fn namedLayoutIterationTest(
-    comptime limit: Node,
-    //comptime argtype: type,
-    args: anytype,
-    comptime work: fn (limit: Node, name: Layout, ells: []Layout, args: @TypeOf(args)) void,
-) // @typeInfo(@TypeOf(work)).Fn.return_type.? {
-!void {
-    var name: Layout = 0;
-    var ells: [limit]Layout = undefined;
-
-    var i: Node = 1;
-
-    ells[0] = node2layout(M);
-
-    while (i < limit) : (i += 1) {
-        ells[i] = 0; //@as(Layout, 1) << (M - i);
-    }
-
-    i = 0;
-
-    while (ells[0] > 1) : (ells[0] >>= 1) {
-        name |= ells[i];
-
-        while (0 < i) {
-            //var stop = (@as(Layout, 1) << (limit - i - 2));
-
-            if (0 == ells[i]) { // (@as(Layout, 1) << (limit - i - 1))) {
-                ells[i] = ells[i - 1];
-            } else {
-                name ^= ells[i];
-            }
-
-            ells[i] >>= 1;
-            name |= ells[i];
-
-            if (i == comptime (limit - 1)) {
-                work(limit, name, &ells, args);
-            }
-
-            if (ells[i] <= 1) {
-                name ^= ells[i];
-                ells[i] = 0;
-                i -= 1;
-            } else {
-                if (i < (limit - 1)) {
-                    i += 1;
-                }
-            }
-        }
-        name ^= ells[i];
-    }
-}
-
-fn namedLayoutIterationTest2(
-    comptime limit: Node,
-    //comptime argtype: type,
-    args: anytype,
-    comptime work: fn (limit: Node, name: Layout, ells: []Layout, args: @TypeOf(args)) void,
-) // @typeInfo(@TypeOf(work)).Fn.return_type.? {
-!void {
-    var name: Layout = 0;
-    var ells: [limit]Layout = undefined;
-
-    var i: Node = 1;
-
-    ells[0] = node2layout(M);
-
-    while (i < limit) : (i += 1) {
-        ells[i] = ells[i - 1] >> 1;
-    }
-
-    while (true) {
-        work(limit, ells[i] | name, &ells, args);
-
-        name |= ells[i];
-
-        while (i > 0) {
-            const stop = (@as(Layout, 1) << (limit - i - 2));
-
-            if (ells[i] <= (@as(Layout, 1) << (limit - i - 1))) {
-                ells[i] = ells[i - 1];
-            } else {
-                name ^= ells[i];
-            }
-
-            ells[i] >>= 1;
-            name |= ells[i];
-
-            if (false) {
-                if (i == comptime (limit - 2)) {
-                    ells[limit - 1] = ells[i] >> 1;
-
-                    while (ells[limit - 1] > 0) : (ells[limit - 1] >>= 1) {}
-
-                    if (ells[i] <= stop) {
-                        name ^= ells[i];
-                        i -= 1;
-                    }
-                } else if (ells[i] <= stop) {
-                    name ^= ells[i];
-                    i -= 1;
-                } else {
-                    i += 1;
-                }
-            } else {
-                if (i == comptime (limit - 1)) {
-                    work(limit, ells[i] | name, &ells, args);
-                }
-
-                if (ells[i] <= stop) {
-                    name ^= ells[i];
-                    i -= 1;
-                } else {
-                    i += 1;
-                }
-            }
-        }
-        name ^= ells[i];
     }
 }
 
@@ -965,16 +587,11 @@ fn namedLayoutIterationTest3(
         ells[i] >>= 1;
         name ^= ells[i];
 
-        while (i < limit - 1) { //(true) : (i += 1) {
+        while (i < limit - 1) {
             i += 1;
 
-            //name ^= ells[i];
             ells[i] = ells[i - 1] >> 1;
             name ^= ells[i];
-
-            //if (i == limit - 1) {
-            //    break;
-            //}
         }
     }
 }
@@ -1006,10 +623,6 @@ fn namedLayoutIteration3(
         try namedIntermediateLayoutPass(limit, name, &ells, args);
 
         while ((node2layout(limit - i) == ells[i]) and (i > 0)) : (i -= 1) {
-            //while ((node2layout(limit - i) == ells[i])) : (i -= 1) {
-            //if (i == 0) {
-            //    break;
-            //}
             name ^= ells[i];
         }
 
@@ -1021,161 +634,20 @@ fn namedLayoutIteration3(
         ells[i] >>= 1;
         name ^= ells[i];
 
-        while (i < limit - 1) { //(true) : (i += 1) {
+        while (i < limit - 1) {
             i += 1;
 
-            //name ^= ells[i];
             ells[i] = ells[i - 1] >> 1;
             name ^= ells[i];
-
-            //if (i == limit - 1) {
-            //    break;
-            //}
         }
     }
-}
-
-fn namedLayoutIteration4(
-    comptime limit: Node,
-    args: *NamedWorkContext(limit),
-) !void {
-    var ells: [limit]Layout = undefined;
-    ells[0] = node2layout(M);
-
-    {
-        comptime var i: Node = 1;
-
-        inline while (i < limit) : (i += 1) {
-            ells[i] = ells[i - 1] >> 1;
-        }
-    }
-
-    var i = limit - 1;
-
-    while (true) {
-        assert(i == limit - 1);
-        try unnamedIntermediateLayoutPass(limit, &ells, args);
-
-        while ((node2layout(limit - i) == ells[i]) and (i > 0)) : (i -= 1) {}
-
-        if ((i == 0) and (node2layout(limit - i) == ells[i])) {
-            break;
-        }
-
-        ells[i] >>= 1;
-
-        while (i < limit - 1) {
-            i += 1;
-
-            ells[i] = ells[i - 1] >> 1;
-        }
-    }
-}
-
-fn namedLayoutIteration5(
-    comptime limit: Node,
-    args: *NamedWorkContext(limit),
-) !void {
-    const len = M - limit + 1;
-
-    comptime var j = 0;
-    comptime var _values: [limit][len]Layout = undefined;
-
-    const values: [limit][len]Layout = inline while (j < _values.len) : (j += 1) {
-        comptime var k = 0;
-
-        inline while (k < len) : (k += 1) {
-            _values[j][len - 1 - k] = comptime node2layout(M - j - k);
-        }
-    } else _values;
-
-    var m: u32 = 0;
-    assert(values[0][len - 1] == node2layout(M));
-    while (m < values.len) : (m += 1) {
-        var n: u32 = 0;
-        while (n < len) : (n += 1) {
-            assert(values[m][n] != 0);
-            if (m > 0) {
-                assert(values[m][n] == (values[m - 1][n] >> 1));
-            }
-            if (n > 0) {
-                assert(values[m][n - 1] == values[m][n] >> 1);
-            }
-        }
-    }
-
-    var name: Layout = 0;
-    var ells: [limit][*]const Layout = undefined;
-    {
-        comptime var i: Node = 0;
-
-        inline while (i < limit) : (i += 1) {
-            ells[i] = &values[i]; //@ptrCast(*const [len]Layout, &values[i]);
-            ells[i] += len - 1;
-            assert(ells[i][0] == values[i][len - 1]);
-            name |= ells[i][0];
-        }
-    }
-
-    var i = limit - 1;
-
-    while (true) {
-        assert(i == limit - 1);
-        assert(@popCount(name) == limit);
-        try namedIntermediateLayoutPtrPass(limit, name, &ells, args);
-
-        while ((&values[i] == ells[i]) and (i > 0)) : (i -= 1) {
-            name ^= ells[i][0];
-        }
-
-        if ((i == 0) and (&values[i] == ells[i])) {
-            break;
-        }
-
-        name ^= ells[i][0];
-        ells[i] -= 1;
-        name ^= ells[i][0];
-
-        while (i < limit - 1) {
-            i += 1;
-
-            ells[i] = ells[i - 1] + len;
-            assert(ells[i][0] == ells[i - 1][0] >> 1);
-            name ^= ells[i][0];
-        }
-    }
-}
-
-fn NamedIteration(
-    comptime limit: Node,
-    comptime argtype: type,
-    comptime work: NamedIterationWork(argtype),
-    args: *argtype,
-) void {
-    const i: Node = 0;
-    var name: Layout = 0;
-    var ells: [limit]Layout = 0;
-    ells[0] = node2layout(M);
-
-    while (true) {
-        if (ells[i] == 0) {
-            ells[i] = ells[i - 1] >> 1;
-        }
-
-        name |= ells[i];
-
-        if (limit - 1 == i) {}
-    }
-
-    _ = work;
-    _ = args;
 }
 
 const Allocator = std.mem.Allocator;
 
 inline fn unroll(
     comptime limit: Node,
-    //comptime iterator: fn (comptime limit: Node, args: anytype, comptime work: anyty3pe) void,
+    //comptime iterator: fn (comptime limit: Node, args: anytype, comptime work: anytype) void,
     alloc: Allocator,
     prev_ctx: *NamedWorkContext(limit - 1),
 ) !MetaLayout(M) {
@@ -1184,11 +656,8 @@ inline fn unroll(
 
     var ctx = MakeWorkContext(limit, alloc, prev_ctx);
 
-    //try namedRecursiveIteration3(limit, &ctx);
     //try namedRecursiveLayoutIteration(limit, &ctx);
     try namedLayoutIteration3(limit, &ctx);
-    //try namedLayoutIteration4(limit, &ctx);
-    //try namedLayoutIteration5(limit, &ctx);
 
     normalize(limit, &ctx);
 
@@ -1407,9 +876,7 @@ test "fast de/composeLayout conversion" {
         const nodes2 = [_]Node{ 31, 30, 29, 27, 23, 16, 15, 8, 4, 2, 1 };
         const layouts2 = map(nodes2, Layout, node2layout);
         const limit2: Node = nodes2.len;
-        //const layout2: Layout = 7;
 
-        //try expectEqual(composeLayout(limit2, nodes2), layout2);
         try expectEqual(decomposeLayout(limit2, composeLayout(limit2, &layouts2)), layouts2);
     }
 }
@@ -1424,7 +891,7 @@ const TestWorkContext = struct {
 test "vector alignment" {
     const stdout = std.io.getStdOut().writer();
 
-    try stdout.print("align {}\n", .{@typeInfo(*@Vector(ScoreSize, Score)).Pointer.alignment});
+    try stdout.print("Vector alignment: {}\n", .{@typeInfo(*@Vector(ScoreSize, Score)).Pointer.alignment});
 }
 
 fn testWork(name: Layout, args: *TestWorkContext) void {
@@ -1479,7 +946,6 @@ test "full Named Iteration Count" {
     inline while (i >= N) : (i -= 1) {
         var args = TestWorkContext{ .limit = i };
 
-        //const i = M / 2;
         iterators[iterators.len - 1](i, &args, testWork);
 
         try expectEqual(args.count, Coeffs[M][i]);
