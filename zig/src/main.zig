@@ -61,13 +61,15 @@ inline fn smallestInLayoutSlow(l: Layout) Layout {
 }
 
 inline fn smallestInLayout(l: Layout) Layout {
-    comptime assert(has_bmi1);
-
-    return asm (
-        \\blsi %[ret], %[l]
-        : [ret] "=r" (-> @TypeOf(l)),
-        : [l] "r" (l),
-    );
+    if (has_bmi1) {
+        return asm (
+            \\blsi %[ret], %[l]
+            : [ret] "=r" (-> @TypeOf(l)),
+            : [l] "r" (l),
+        );
+    } else {
+        return smallestInLayoutSlow(l);
+    }
 }
 
 inline fn noOp(x: anytype) @TypeOf(x) {

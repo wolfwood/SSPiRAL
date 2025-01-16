@@ -6,6 +6,7 @@ const feature = @import("std").Target.x86.Feature;
 const forceAvx2 = false;
 const fullAvx512 = true;
 const profile = false;
+const forceNoBitManip = false;
 
 pub fn build(b: *std.Build) void {
     // Standard target options allows the person running `zig build` to choose
@@ -23,6 +24,10 @@ pub fn build(b: *std.Build) void {
         target.result.cpu.features.addFeature(@intFromEnum(feature.avx2));
     } else if (fullAvx512) {
         target.result.cpu.features.removeFeature(@intFromEnum(feature.prefer_256_bit));
+    }
+
+    if (forceNoBitManip) {
+        target.result.cpu.features.removeFeature(@intFromEnum(feature.bmi));
     }
 
     // Standard release options allow the person running `zig build` to select
