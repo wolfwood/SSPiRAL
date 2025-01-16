@@ -15,6 +15,7 @@ const MlSize = 131 + 1;
 
 // types
 const Node = bitsToType(N);
+// there's a 2% overhead for using the arbitrary sized type, also compiler segfault when building tests
 const Layout = u32; //bitsToType(M);
 const Score = u32;
 const ScoreIdx = u8;
@@ -43,7 +44,7 @@ inline fn layout2node(l: Layout) Node {
 
 inline fn largestInLayout(l: Layout) Layout {
     assert(l != 0);
-    const result = @as(Layout, 1) << (M - @as(Node, 1) - @clz(l));
+    const result = @as(Layout, 1) << (@bitSizeOf(Layout) - 1 - @clz(l));
 
     assert(result != 0);
 
