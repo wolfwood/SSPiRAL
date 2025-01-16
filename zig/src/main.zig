@@ -397,7 +397,7 @@ fn namedIntermediateLayoutPtrPass(comptime limit: Node, name: Layout, ells: *[li
     args.layouts[name].score = try getScoreIndex(limit, args);
 }
 
-fn namedIntermediateLayoutOnlyPass(comptime limit: Node, ells: *const [limit]Layout, args: *NamedWorkContext(limit)) !void {
+fn unnamedIntermediateLayoutPass(comptime limit: Node, ells: *const [limit]Layout, args: *NamedWorkContext(limit)) !void {
     const name = composeLayout(limit, ells);
 
     sumChildLayoutScoresLayout(limit, name, ells, args);
@@ -1049,7 +1049,7 @@ fn namedLayoutIteration4(
 
     while (true) {
         assert(i == limit - 1);
-        try namedIntermediateLayoutOnlyPass(limit, &ells, args);
+        try unnamedIntermediateLayoutPass(limit, &ells, args);
 
         while ((node2layout(limit - i) == ells[i]) and (i > 0)) : (i -= 1) {}
 
