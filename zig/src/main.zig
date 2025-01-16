@@ -276,12 +276,9 @@ fn roundToAlignment(comptime T: type, comptime len: u32) u32 {
         return 64 / @sizeOf(T);
     }
 
-    return
-    //if (raw <= (256 / 8)) 32 / @sizeOf(T) else if (raw <= 512 / 8) 64 / @sizeOf(T) else
-    ((raw / 64) + @intFromBool(raw % 64 != 0)) * 64 / @sizeOf(T);
+    return ((raw / 64) + @intFromBool(raw % 64 != 0)) * 64 / @sizeOf(T);
 }
 
-// XXX parameterize by limit
 fn MetaLayout(comptime limit: Node) type {
     return struct {
         //scores: [std.math.min(ScoreSize, limit - (N - 1))]Score,
@@ -305,7 +302,7 @@ fn NamedWorkContext(comptime limit: Node) type {
 
             curr_score: ScoreIdx = 0,
 
-            // XXX some dynamic dictionary from MetaLayout -> ScoreIdx
+            // XXX test alternative collections
             unique: std.AutoHashMap(MetaLayout(limit), ScoreIdx),
         };
     }
@@ -695,12 +692,6 @@ fn namedRecursiveIteration3(
 ) !void {
     try nriHelper3(limit, 1, node2layout(M), 0, args);
 }
-
-// TODO
-
-//fn NamedLayoutIterationWork(comptime argtype: type) type {
-//    return fn (name: Layout, ells: []Layout, args: argtype) void;
-//}
 
 inline fn nrliHelper(
     comptime limit: Node,
@@ -1175,32 +1166,6 @@ fn NamedIteration(
     _ = args;
 }
 
-fn CombinadicWorkContext(comptime verify: bool, comptime limit: Node) type {
-    const layout_count = Coeffs(M, limit);
-    return struct {
-        layouts: [layout_count]LayoutStats(verify),
-        unique_scores: [MlSize]MetaLayout(limit),
-
-        curr_layout: Combinadic,
-        curr_score: ScoreIdx,
-
-        // XXX some dynamic dictionary from MetaLayout -> ScoreIdx
-        unique: std.AutoHashMap(MetaLayout, ScoreIdx),
-    };
-}
-
-//fn CombinadicFirstBlushIterator(comptime verify: bool, comptime limit: Node) type {
-//    return struct {
-//       work: *WorkContext(verify, limit),
-//       Is: Node,
-//       name: if (verify) Layout else void,
-//   };
-//}
-
-// main
-
-//var stats: [totalLayoutCount]LayoutStats(false) = undefined;
-
 const Allocator = std.mem.Allocator;
 
 inline fn unroll(
@@ -1236,7 +1201,6 @@ const tracy = @import("tracy");
 pub fn main() !void {
     const stdout = std.io.getStdOut().writer();
 
-    //try stdout.print("Hello, {s} {} {}\n", .{ "world", Coeffs[M][M / 2], totalLayoutCount });
     try stdout.print("{} of {}\n", .{ N, M });
 
     var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
@@ -1306,7 +1270,6 @@ fn coeffs() [@as(u32, M) + 1][@as(u32, M) + 1]Combinadic {
             co[__i][j] = co[__i - 1][j] + co[__i - 1][j - 1];
         }
     } else co;
-    //    return co;
 }
 
 const Coeffs = coeffs();
