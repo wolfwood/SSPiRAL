@@ -551,7 +551,10 @@ inline fn nrliHelper(
     }
 }
 
-fn namedLayoutIterationTest3(
+// XXX duplicated iteration to substitute a different work function for testing
+// at least with previous versions of zig, a generic function with a generic work function argument
+// both sharing the same comptime constant parameter was too much for the compiler to handle
+fn namedLayoutIterationTest(
     comptime limit: Node,
     //comptime argtype: type,
     args: anytype,
@@ -596,7 +599,7 @@ fn namedLayoutIterationTest3(
     }
 }
 
-fn namedLayoutIteration3(
+fn namedLayoutIteration(
     comptime limit: Node,
     //comptime argtype: type,
     args: *NamedWorkContext(limit), //anytype,
@@ -656,6 +659,7 @@ inline fn unroll(
 
     var ctx = MakeWorkContext(limit, alloc, prev_ctx);
 
+    // XXX re-benchmark recursive iteration
     //try namedRecursiveLayoutIteration(limit, &ctx);
     try namedLayoutIteration3(limit, &ctx);
 
@@ -915,7 +919,7 @@ fn testLayoutWork(comptime limit: Node, name: Layout, ells: *[limit]Layout, args
 }
 
 const iterators = .{namedRecursiveIteration};
-const layoutIterators = .{namedLayoutIterationTest3};
+const layoutIterators = .{namedLayoutIterationTest};
 
 test "fast Named Iteration Count" {
     const i = if (N >= 5) 13 else M / 2;
