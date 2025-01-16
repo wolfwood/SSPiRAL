@@ -36,7 +36,9 @@ inline fn node2layout(node: Node) Layout {
 
 inline fn layout2node(l: Layout) Node {
     assert(@popCount(l) == 1);
-    return @ctz(l) + 1;
+    // compiler doesn't know l is non-zero so the max result of @ctz is M - 1
+    // (which fits in N bits even when incremented)
+    return @as(Node, @intCast(@ctz(l))) + 1;
 }
 
 inline fn largestInLayout(l: Layout) Layout {
