@@ -106,21 +106,46 @@ The most significant work that cannot be eliminated in the current algorithm is 
 I will add discussion of this later, however the [Zig implementation](zig/src/main.zig) calls in to question the need for some of these optimizations.
 
 
-<!--
 ## Optimization
-These approaches are ordered by my estimation of how powerful they might be, but not necessarily by how successful I've been with them so far.
+These approaches are ordered by my estimation of how powerful they might be, but not necessarily by how successful I've been with them so far. Some optimizations span categories. These are not meant to be rigid designations but rather a way to organize my ideas and future work.
 
-### theoretic
+### Theoretic
+The best possible outcome would be to determine closed form equations to give the reliability of a given layout, to decide if a given layout is in the optimal metalayout for that number of nodes, and/or to produce a set of optimal layouts that when deviated from, we could reconfigure to return to an optimal layout.
 
-### algorithmic
+It is quite possible that no such result exists, but even proving that definitively would be a useful result.
 
-### implementation
+Vince initially tried to tackle score calculation with combinatorics, however the approach had no predictive power for greater values of **N**. At the time we had to establish the liveness of key layouts manually, which led me to write my first simulator.
 
-### language
+We also tried using the [On-Line Encyclopedia of Integer Sequences](https://oeis.org/) to identify if there were previously characterized patterns in e.g. the numbers of live or dead layouts within the score for a full layout at various values of **N**. Unfortunately this didn't lead us to related work.
 
-### compiler
+Another framing is that the problem might become tractable for much larger **N** if we were able to (dramatically) reduce the state space we need to consider. There is a strong possibility that this is can be done, because there are significantly fewer metalayouts than layouts. I am not sure how to characterize metalayouts directly, but I am aware that most layouts that are relabelings of other layouts.
+
+To this end, I identified two fields to draw on, group theory and graph isomorphism. I started to think of relabelings as symmetries although I believe they are not direct parallels of geometric symmetry. Nonetheless, since group theory can be used to characterize geometric symmetry, I began to learn about abstract algebra in general (now I get why it's a Galois *field*) and group theory in particular. Xor can clearly serve as a group operation but I'm still exploring what sort of function relabeling might correspond to.
+
+My work with graph isomorphism (and automorphism) progressed further. I identified [nauty](https://pallini.di.uniroma1.it/) as an efficient library capable of producing canonical labelings of graphs (among other features). I chose to represent a layout as a bipartite graph with edges between data nodes and the parity nodes that contain them.  I denoted live nodes (data or parity) with a self directed edge. In this approach, I used canonicalization  of a layout's name to avoid repeating liveness check and score calculation in the case where another, relabeled layout had already been evaluated. The canonical name lookup had a high hit rate, but the work of the isomorphism solver was so much greater that it did not offset the costs.
+
+If we could enumerate only one canonical layout for every group of relabelings *and* compute how many relabelings actually result in unique layouts (i.e. the group size) *and* it were possible to efficiently enumerate the canonical child layouts, then we could characterize metalayouts with roughly the same approach as the current one while requiring substantially less memory (and possibly less computation, but that is less clear).
+
+I recently tackled this approach using nauty again in [rust-isomorphism/](rust-isomorphism/). I used a bipartite graph encoding again, but this time used graph coloring (a built in concept that is part of how nauty identifies nodes that can exchange labels) to encode live nodes. This allowed me to construct the graph only once. I start with a full layout, identify orbits (nodes that can exchange labels), and then recurse but only trying to remove a single node from each orbit. This approach does seem reasonable for greatly reducing the number of states considered, but for N=5, the computaional cost of nauty is dramatically higher than the full enumeration.
+
+<!--
+### Algorithmic
+
+### Implementation
+One focus of the C implementation was moving from using a recursive function to iterate through the layouts to a single loop with arrays serving as a manual stack frame for storing state. This resulted in a significant speed up. Another fruitful avenue was the ability to pass the iteration state into the work function where it could be reused to enumerate child layouts.
+
+Another technique in the C code was moving from directly using a generic Binomial coefficent lookup table, to creating arrays of custom lookup values for each invocation of the iteration code, with the corrct value available using a single index value without additional calculation. The final version of this approach was to move to storing pointers into the custom lookup arrays and directly incrementing them, while removing the index value completely.
+
+In the zig version I got measurable improvement using SIMD vectors for score addition.
+
+### Language
+
+
+### Compiler
+Clang consistently produces slower executables from the C code than GCC.
+
+I have peviously used the [irace](https://github.com/MLopez-Ibanez/irace.git) configuration optimizer to identify the best GCC flags for the C code. Of particular note at the time, -O3 was slower that -O2, although -O2 did benefit from the addition of the -ftree-vectorize flag (used by -O3). This flag has now been added to the -O2 set. The C code also benefits from Link Time Optimization and the graphite loop optimizer.
 -->
-
 
 ## Notes on Organization
 This code contains many redundant implementations of the same functions, which I would have removed from a production codebase. This is because comparing different strategies is a major goal of this work. Similarly the archive is maintained, rather than being relegated to the git history, to serve as reference.
