@@ -236,7 +236,7 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
                 self.print(&lab);
             }
 
-            self.scores[prev + 1] += unique_counts[i];
+            self.scores[prev + 1] += 1; //unique_counts[i];
 
             if prev + 1 < M - MtoN::<M>() as usize {
                 self.ptn[prev] = 1;
