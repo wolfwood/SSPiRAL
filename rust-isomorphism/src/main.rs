@@ -4,7 +4,8 @@ const N: Node = 3;
 const M: ConstT = NtoM::<N>();
 
 fn main() {
-    let mut nau = Nauty::<M, true>::new();
+    const DEBUG: bool = false;
+    let mut nau = Nauty::<M, DEBUG>::new();
 
     nau.recurse();
 
