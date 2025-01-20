@@ -156,6 +156,10 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
 
         self.compute(&mut lab);
 
+        if DEBUG {
+            self.print(&lab);
+        }
+
         self.scores[0] = 1;
 
         self.options.defaultptn = 0;
@@ -170,10 +174,6 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
     fn _recurse(&mut self, prev: usize, prev_lab: &mut [Node; M]) {
         let (unique_orbits, unique_counts) = self.count_orbits();
 
-        if DEBUG {
-            println!("=== Recurse {prev} ===");
-        }
-
         let mut dead_nodes = prev_lab[..prev].iter().copied().collect::<ArrayVec<_, M>>();
         dead_nodes.sort();
         dead_nodes.reverse();
@@ -187,6 +187,29 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
         } else {
             unique_orbits.len()
         };
+
+        if DEBUG {
+            println!("=== Recurse {prev} ===");
+            print!("uniq [ ");
+            for &orbit in unique_orbits.iter() {
+                print!("{} ", revert::<M>(orbit));
+            }
+            println!("]");
+
+            print!("dead [ ");
+            for &orbit in dead_nodes.iter() {
+                print!("{} ", revert::<M>(orbit));
+            }
+            println!("]");
+
+            print!(" [ ");
+            for i in 0..cap {
+                print!("{} ", revert::<M>(unique_orbits[i]));
+            }
+            println!("]");
+
+            println!("=== ===");
+        }
 
         for i in 0..cap {
             let mut found = false;
@@ -207,6 +230,11 @@ impl<const M: ConstT, const DEBUG: bool> Nauty<M, DEBUG> {
             let mut lab = *prev_lab;
 
             self.compute(&mut lab);
+
+            if DEBUG {
+                println!("level {prev} try {}", revert::<M>(prev_lab[prev]));
+                self.print(&lab);
+            }
 
             self.scores[prev + 1] += unique_counts[i];
 
