@@ -17,3 +17,8 @@ spiral: spiral.c Makefile
 
 spiral-clang: spiral.c Makefile
 	clang $(CFLAGS) $(CFLAGS_CLANG) -o $@ $<
+
+unused: spiral.c
+	gcc -ffunction-sections -Wl,--gc-sections,--print-gc-sections -o /dev/null $< 2>&1 | rg ".*\.text\.(\w*).*" -r '$$1'
+
+.PHONY: unused
