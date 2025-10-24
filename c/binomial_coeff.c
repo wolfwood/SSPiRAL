@@ -24,7 +24,7 @@ void initCoeffs() {
   }
 }
 
-inline int binomialCoeff(int n, int k) {
+inline int binomialCoeff(const int n, const int k) {
   //if ( n < k) {
   //  return 0;
   //}

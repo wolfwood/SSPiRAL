@@ -1,6 +1,6 @@
 #include "liveness.h"
 
-bool recurseCheck(layout_t name, node_t n, node_t i) {
+static bool recurseCheck(const layout_t name, node_t n, node_t i) {
   for (; i <= M; ++i) {
     layout_t l = ((layout_t) 1) << (i - 1);
 
@@ -16,7 +16,7 @@ bool recurseCheck(layout_t name, node_t n, node_t i) {
   return false;
 }
 
-bool checkIfAlive(layout_t name) {
+bool checkIfAlive(const layout_t name) {
   for (node_t n = 1; n <= M; n <<= 1) {
     layout_t l = node2layout(n);
 

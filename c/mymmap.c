@@ -63,7 +63,7 @@ void *mymap(uint64_t *size) {
   return temp;
 }
 
-void myunmap(void *ptr, uint64_t size) {
+void myunmap(void *ptr, const uint64_t size) {
   int err = munmap(ptr, size);
   if (0 != err) {
     perror("unmap failed: ");

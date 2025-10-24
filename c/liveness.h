@@ -4,5 +4,5 @@
 
 #include "types.h"
 
-bool checkIfAlive(layout_t name);
+bool checkIfAlive(const layout_t name);
 bool deadnessCheck(const node_t *Is, const int len);

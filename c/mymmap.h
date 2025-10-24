@@ -24,4 +24,4 @@
 #define oneGB (1024*1024*1024)
 
 void *mymap(uint64_t *size);
-void myunmap(void *ptr, uint64_t size);
+void myunmap(void *ptr, const uint64_t size);

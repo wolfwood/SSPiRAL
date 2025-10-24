@@ -28,8 +28,8 @@ typedef uint8_t mlidx_t;
 
 
 /* util */
-node_t MfromN(node_t n);
-layout_t node2layout(node_t n);
+node_t MfromN(const node_t n);
+layout_t node2layout(const node_t n);
 
 
 /* core structure */
