@@ -46,7 +46,7 @@ bool deadnessCheck(const node_t *Is, const int len) {
       node_t temp = n;
 
       node_t Js[len + 1];
-      const node_t SENTINEL = 3;
+      const node_t SENTINEL = 2;
 
       for (uint k = 1; k <= len; ++k) {
         Js[k] = SENTINEL;
@@ -64,9 +64,6 @@ bool deadnessCheck(const node_t *Is, const int len) {
           Js[i] = SENTINEL;
           --i;
         } else {
-          if (SENTINEL == Js[i]) {
-            Js[i] = 2;
-          }
           temp ^= Is[i] + 1;
 
           if (0 == temp) {
