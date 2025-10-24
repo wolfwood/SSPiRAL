@@ -10,15 +10,23 @@ ifeq ($(GCC_GRAPHITE), 0)
 endif
 
 
+UTIL = liveness.c types.c binomial_coeff.c mymmap.c
+SRC = spiral.c $(UTIL)
+HEADER = $(patsubst %.c,%.h,$(UTIL))
+
+
 all: spiral spiral-clang
 
-spiral: spiral.c Makefile
-	gcc $(CFLAGS) $(CFLAGS_GCC) -o $@ $<
+spiral: $(SRC) $(HEADER)
+	gcc $(CFLAGS) $(CFLAGS_GCC) -o $@ $(SRC)
 
-spiral-clang: spiral.c Makefile
-	clang $(CFLAGS) $(CFLAGS_CLANG) -o $@ $<
+spiral-clang: $(SRC) $(HEADER)
+	clang $(CFLAGS) $(CFLAGS_CLANG) -o $@ $(SRC)
 
-unused: spiral.c
-	gcc -ffunction-sections -Wl,--gc-sections,--print-gc-sections -o /dev/null $< 2>&1 | rg ".*\.text\.(\w*).*" -r '$$1'
+unused: $(SRC)
+	gcc -ffunction-sections -Wl,--gc-sections,--print-gc-sections -o /dev/null $^ 2>&1 | rg ".*\.text\.(\w*).*" -r '$$1'
 
 .PHONY: unused
+
+clean:
+	rm spiral spiral-clang
