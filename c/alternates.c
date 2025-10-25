@@ -3115,7 +3115,7 @@ void TerminalWork(
 
 void TerminalCombinadicWork(
 #ifdef VERIFY
-    layout_t name,
+    layout_t name, node_t *Is,
 #endif
     uint limit, uint idx, uint *beforeCoefs, uint *afterCoefs, void *_arg) {
 
@@ -3131,7 +3131,7 @@ void TerminalCombinadicWork(
   // add each child in
   sumChildLayoutScoresInner(
 #ifdef VERIFY
-      name,
+      name, Is,
 #endif
       args->curr, args->layoutsInCurr, args->curr_ml, idx, beforeCoefs, afterCoefs, limit - 1, next_ml, SCORE_SIZE);
 

@@ -318,7 +318,7 @@ void IntermediateZoneDeltaWork(
   // add each child in
   sumChildLayoutScoresDeltas(
 #ifdef VERIFY
-      name,
+      name, Is,
 #endif
       args->curr, args->layoutsInCurr, args->curr_ml, idx, deltaCoefs, limit - 1, next_ml, (limit - N));
 
@@ -359,7 +359,7 @@ void IntermediateZoneDeltaWork(
 
 void TerminalCombinadicDeltaWork(
 #ifdef VERIFY
-    layout_t name,
+    layout_t name, node_t *Is,
 #endif
     uint limit, uint idx, uint *deltaCoefs, void *_arg) {
 
@@ -375,7 +375,7 @@ void TerminalCombinadicDeltaWork(
   // add each child in
   sumChildLayoutScoresDeltas(
 #ifdef VERIFY
-      name,
+      name, Is,
 #endif
       args->curr, args->layoutsInCurr, args->curr_ml, idx, deltaCoefs, limit - 1, next_ml, SCORE_SIZE);
 
