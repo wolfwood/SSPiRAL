@@ -1,4 +1,7 @@
-CFLAGS = -march=native -DNORMALIZE -DNDEBUG
+_CFLAGS = -march=native -DNORMALIZE
+CFLAGS = $(_CFLAGS) -DNDEBUG
+CFLAGS_DEBUG = $(_CFLAGS) -g
+CFLAGS_VERIFY = $(CFLAGS_DEBUG) -DVERIFY
 
 CFLAGS_GCC = -pipe -O2 -ftree-vectorize -flto
 CFLAGS_CLANG = -O3
@@ -23,10 +26,22 @@ spiral: $(SRC) $(HEADER)
 spiral-clang: $(SRC) $(HEADER)
 	clang $(CFLAGS) $(CFLAGS_CLANG) -o $@ $(SRC)
 
+debug-clang: $(SRC) $(HEADER)
+	clang $(DEBUG_CFLAGS) $(CFLAGS_CLANG) -o $@ $(SRC)
+
+sanitize: $(SRC) $(HEADER) alternates.c
+	clang $(CFLAGS_DEBUG) $(CFLAGS_CLANG) -fsanitize=address,undefined,leak,integer -o $@ $(SRC)
+
+sanitize-verify: $(SRC) $(HEADER) alternates.c
+	clang $(CFLAGS_VERIFY) $(CFLAGS_CLANG) -fsanitize=address,undefined,leak,integer -o $@ $(SRC)
+
+sanitize-mem: $(SRC) $(HEADER) alternates.c
+	clang $(CFLAGS_DEBUG) $(CFLAGS_CLANG) -fsanitize=memory -o $@ $(SRC)
+
 unused: $(SRC)
 	gcc -ffunction-sections -Wl,--gc-sections,--print-gc-sections -o /dev/null $^ 2>&1 | rg ".*\.text\.(\w*).*" -r '$$1'
 
 .PHONY: unused
 
 clean:
-	rm spiral spiral-clang
+	-rm spiral spiral-clang debug-clang sanitize sanitize-verify sanitize-mem
