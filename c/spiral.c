@@ -21,7 +21,7 @@
  *   this saves a bunch of xors on this end, and can avoid representation transformation in the work function, particularly deadness.
  *   the layout position is not named directly, it is simply a loop counter buried in the work function.
  */
-void walkOrderedNameless(const uint limit, void(*func)(uint limit, node_t *Is, void *arg), void *arg) {
+void walkOrderedNameless(const uint limit, void(*func)(const uint limit, const node_t *Is, void *arg), void *arg) {
   uint i = 1;
   node_t Is[limit + 1];
   const node_t SENTINEL = 0;
@@ -51,7 +51,7 @@ void walkOrderedNameless(const uint limit, void(*func)(uint limit, node_t *Is, v
   }
 }
 
-void walkNamelessDeltas6(const uint limit, void(*func)(uint limit, node_t *Is, score_t idx, score_t *deltaCoeffs, void *arg),
+void walkNamelessDeltas6(const uint limit, void(*func)(const uint limit, const node_t *Is, const score_t idx, const score_t *deltaCoeffs, void *arg),
                          void *arg) {
   uint i = limit;
   node_t Is[limit + 1];
@@ -112,7 +112,7 @@ void walkNamelessDeltas6(const uint limit, void(*func)(uint limit, node_t *Is, s
   }
 }
 
-void walkCombinadicDeltas29(const uint limit, void(*func)(uint limit, score_t idx, score_t *deltaCoeffs, void *arg),
+void walkCombinadicDeltas29(const uint limit, void(*func)(const uint limit, const score_t idx, const score_t *deltaCoeffs, void *arg),
                             void *arg) {
   uint i = limit;
   const node_t SENTINEL = 0;
@@ -232,9 +232,9 @@ void sumChildLayoutScoresDeltas(
 #ifdef VERIFY
     layout_t name, const node_t *Is,
 #endif
-    struct Layout *curr, layout_t layoutsInCurr, struct MetaLayout *curr_ml,
-    uint idx, uint *deltaCoefs, int coefs_len,
-    struct MetaLayout *next_ml, int scores_len) {
+    const struct Layout *curr, const layout_t layoutsInCurr, struct MetaLayout *curr_ml,
+    uint idx, const uint *deltaCoefs, const int coefs_len,
+    struct MetaLayout *next_ml, const int scores_len) {
 
   {
     const struct MetaLayout *temp_ml = &curr_ml[curr[layoutsInCurr - 1 - idx].scoreIdx];
@@ -266,9 +266,9 @@ void sumChildLayoutScoresDeltas(
 /* core work functions, applied with walkOrdered */
 void FirstPassWork(
 #ifdef VERIFY
-    layout_t name,
+    const layout_t name,
 #endif
-    uint limit, node_t *Is, void *_arg) {
+    const uint limit, const node_t *Is, void *_arg) {
   struct FirstPassArgs *args = _arg;
 
   struct MetaLayout *next_ml = &args->ml[args->ml_idx];
@@ -298,9 +298,9 @@ void FirstPassWork(
 
 void IntermediateZoneDeltaWork(
 #ifdef VERIFY
-    layout_t name,
+    const layout_t name,
 #endif
-    uint limit, node_t *Is, uint idx, uint *deltaCoefs, void *_arg) {
+    const uint limit, const node_t *Is, const uint idx, const uint *deltaCoefs, void *_arg) {
   struct IntermediateZoneArgs *args = _arg;
 
   // convenient alias
@@ -359,9 +359,9 @@ void IntermediateZoneDeltaWork(
 
 void TerminalCombinadicDeltaWork(
 #ifdef VERIFY
-    layout_t name, node_t *Is,
+    const layout_t name, const node_t *Is,
 #endif
-    uint limit, uint idx, uint *deltaCoefs, void *_arg) {
+    const uint limit, const uint idx, const uint *deltaCoefs, void *_arg) {
 
   struct IntermediateZoneArgs *args = _arg;
 

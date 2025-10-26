@@ -10,7 +10,7 @@
  *   from the list of nodes in the layout, which can be used directly for child score summation and deadness checking,
  *   rather than reconstucting the list, used to build the name in the first place, back fron the name again.
  */
-void walkOrdered(const uint limit, void(*func)(layout_t name, uint limit, node_t *Is, void *arg), void *arg) {
+void walkOrdered(const uint limit, void(*func)(const layout_t name, const uint limit, const node_t *Is, void *arg), void *arg) {
   uint i = 1;
   layout_t ells[limit + 1], name = 0;
   node_t Is[limit + 1];
@@ -3016,9 +3016,9 @@ void sumChildLayoutScores2(
 
 void IntermediateZoneWork(
 #ifdef VERIFY
-    layout_t name,
+    const layout_t name,
 #endif
-    uint limit, node_t *Is, void *_arg) {
+    const uint limit, const node_t *Is, void *_arg) {
   struct IntermediateZoneArgs *args = _arg;
 
   // convenient alias
@@ -3072,9 +3072,9 @@ void IntermediateZoneWork(
 
 void TerminalWork(
 #ifdef VERIFY
-    layout_t name,
+    const layout_t name,
 #endif
-    uint limit, node_t *Is, void *_arg) {
+    const uint limit, const node_t *Is, void *_arg) {
 
   struct IntermediateZoneArgs *args = _arg;
 
