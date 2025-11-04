@@ -158,6 +158,15 @@ void walkCombinadicDeltas29(const uint limit, void(*func)(const uint limit, cons
       do {
         --i;
         --bs[i];
+        /* UndefinedBehaviorSanitizer reports a single runtime error on the next line:
+           unsigned integer overflow: 0 - 145422675 cannot be represented in type 'unsigned int'
+
+           index 0 is the final element of the iteration so this occurs when
+           this inner loop is winding i down to 0, in order to exit the outer
+           loop. doesn't affect output values. could likely be eliminated by
+           adding an extra 0 padding to each lookup table row, so that the
+           guilty as[i] points to 0 during the unwind.
+        */
         index -= *as[i];
         --as[i];
       } while (0 == *bs[i] && 0 < i);
