@@ -594,4 +594,10 @@ int main(int argc, char **argv) {
   for (int j = M - N + 1; j <= M; ++j) {
     printf("%d %u %u\n", j, 0, binomialCoeff(M, j));
   }
+
+#ifdef VERIFY
+  free(next_ml);
+  free(curr_ml);
+  myunmap(curr, curr_size);
+#endif
 }
