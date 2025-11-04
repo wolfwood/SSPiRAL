@@ -24,7 +24,7 @@ typedef uint8_t mlidx_t;
 #define SCORE_SIZE (((M+1) / 2) - N)
 
 // maximum number of unique MetaLayouts (131 for N=5)
-#define ML_SIZE (131+1)
+#define ML_SIZE (131+2)
 
 
 /* util */
