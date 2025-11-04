@@ -197,16 +197,22 @@ int scoreCompare(const void *_a, const void *_b) {
 
   //for (int i = SCORE_SIZE - 1; i >= 0; --i) {
   for (int i = 0; i < SCORE_SIZE; ++i) {
-    /*if (a->scores[i] < b->scores[i]) {
+#ifdef VERIFY
+    if (a->scores[i] < b->scores[i]) {
       return -1;
     } else if (a->scores[i] > b->scores[i]) {
       return 1;
-      }*/
-    score_t val = a->scores[i] - b->scores[i];
+    }
+#else
+    // faster, but since score_t is unsigned this requires a signed type with
+    // more bits than score_t.
+    assert(sizeof(int64_t) > sizeof(score_t));
+    int val = (int64_t)a->scores[i] - (int64_t)b->scores[i];
 
     if (val) {
       return val;
     }
+#endif
   }
 
   return 0;
