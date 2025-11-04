@@ -66,9 +66,12 @@ void walkNamelessDeltas6(const uint limit, void(*func)(const uint limit, const n
 
   bs[0] = &befores[0][M];
 
+  // a rectangular array with unused elements is faster than a triangular array
+  // we still zero the unused elements, the first acts as a sentinel but the
+  // others avoid calling binomialCoeff() with bad bounds
   for (int i = M; i >= 0; --i) {
     for (int j = limit; j >= 0; --j) {
-      befores[j][i] = binomialCoeff(i, limit - j);
+      befores[j][i] = i < limit-j ? 0 : binomialCoeff(i, limit - j);
     }
   }
 
@@ -128,7 +131,7 @@ void walkCombinadicDeltas29(const uint limit, void(*func)(const uint limit, cons
 
   for (int i = M; i >= 0; --i) {
     for (int j = limit; j >= 0; --j) {
-      befores[j][i] = binomialCoeff(i, limit - j);
+      befores[j][i] = i < limit-j ? 0 : binomialCoeff(i, limit - j);
     }
   }
 
