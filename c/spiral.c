@@ -191,7 +191,6 @@ void walkCombinadicDeltas29(const uint limit, void(*func)(const uint limit, cons
     } else {
       --bs[i];
       --as[i];
-      // shoooould be equal to --deltaCoefs[i - 1];--index;
       ++deltaCoefs[i - 1];
       --index;
     }
